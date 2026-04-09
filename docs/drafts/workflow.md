@@ -91,3 +91,17 @@
  - MinIO ? aponta as transcrições pra lá (isso facilita escala e não arrebenta com o DB claro que no longo prazo ^^)
  - Autenticação (Basic auth ou JWT)
  - Abordar a pipe completa? até metodologia do desenvolvimento? esteira de devops?
+ - Chaves de API, posso por um back-end rodando só para o gateway de LLM e limitar até 10 mensagens (então posso deixar aberto) 
+
+
+ ## Uso de Coding Agent
+ - Usar o Copilot modelos eu vario entre sonnet-4.6 e gpt 5.4
+ - MCP do chrome dev tools para front-end
+ - skills do masa framework
+ - skills do interface design
+ - prentendo usar para o front, testes e reviews de segurança
+
+
+ ## Batch process & Inline process
+  - para a demonstração o ideal é o inline
+  - para grandes volumes, processamento em batch
