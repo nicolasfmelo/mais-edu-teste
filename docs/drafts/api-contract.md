@@ -9,3 +9,23 @@ endpoint livre para jogar json pelo swagger
 
 
 endpoints para emulação de whatsapp
+
+
+## front-chat
+
+ - rota root user + jwt
+
+ - Rota model select
+
+ - rota chat
+
+ - rota user
+
+ - rota history
+
+ - rota credits
+
+
+## nps page
+ - 
+
