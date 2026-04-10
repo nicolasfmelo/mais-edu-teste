@@ -105,3 +105,10 @@
  ## Batch process & Inline process
   - para a demonstração o ideal é o inline
   - para grandes volumes, processamento em batch
+
+
+## Fake Data
+ - Preciso criar dados de cursos, instituição, valores e grades curriculares.
+ - modalidade presencial e EAD
+ - Pós-graduação e MBA
+ 
