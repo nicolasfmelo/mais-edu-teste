@@ -2,7 +2,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from app.domain_models.common.ids import AgentRunId
+from app.domain_models.chat.models import ChatMessage
+from app.domain_models.common.ids import AgentRunId, SessionId
 from app.domain_models.rag.models import RetrievedChunk
 
 
@@ -16,6 +17,32 @@ class CreditStatus:
 class AgentDecision:
     should_use_rag: bool
     should_call_credit_system: bool
+
+
+@dataclass(frozen=True)
+class AgentInvocation:
+    session_id: SessionId
+    api_key: str
+    idempotency_key: str
+    latest_user_message: str
+    conversation_messages: tuple[ChatMessage, ...]
+    model_id: str | None = None
+    system_prompt: str | None = None
+
+
+@dataclass(frozen=True)
+class GatewayPromptRequest:
+    api_key: str
+    idempotency_key: str
+    prompt: str
+    model_id: str | None = None
+
+
+@dataclass(frozen=True)
+class GatewayPromptReply:
+    content: str
+    model_id: str | None = None
+    provider_latency_ms: int | None = None
 
 
 @dataclass(frozen=True)

@@ -10,6 +10,7 @@ from app.delivery.http.evaluation_handler import EvaluationHandler
 from app.delivery.http.indexing_handler import IndexingHandler
 from app.delivery.http.metrics_handler import MetricsHandler
 from app.delivery.http.prompt_registry_handler import PromptRegistryHandler
+from app.engines.agent.prompt_assembly_engine import PromptAssemblyEngine
 from app.engines.evaluation.session_evaluation_engine import SessionEvaluationEngine
 from app.engines.indexing.chunking_engine import ChunkingEngine
 from app.engines.indexing.course_markdown_parser import CourseMarkdownParser
@@ -19,12 +20,12 @@ from app.integrations.database.repos.in_memory_metrics_repository import InMemor
 from app.integrations.database.repos.in_memory_prompt_registry_repository import InMemoryPromptRegistryRepository
 from app.integrations.database.repos.in_memory_session_repository import InMemorySessionRepository
 from app.integrations.database.repos.postgres_course_catalog_repository import PostgresCourseCatalogRepository
-from app.integrations.external_apis.fake_ai_gateway_client import FakeAIGatewayClient
-from app.integrations.external_apis.fake_credit_system_client import FakeCreditSystemClient
+from app.integrations.external_apis.llm_proxy_gateway_client import LLMProxyGatewayClient
 from app.integrations.llm_providers.fake_embedding_client import FakeEmbeddingClient
 from app.integrations.object_store.minio_document_store import MinioDocumentStore
 from app.integrations.vector_store.qdrant_knowledge_repository import QdrantKnowledgeRepository
 from app.services.agent.agent_service import AgentService
+from app.services.agent.langgraph_course_agent import LangGraphCourseAgent
 from app.services.chat.chat_service import ChatService
 from app.services.evaluation.evaluation_service import EvaluationService
 from app.services.indexing.course_catalog_bootstrap_service import CourseCatalogBootstrapService
@@ -45,9 +46,9 @@ class AppContainer:
         self._knowledge_repository = QdrantKnowledgeRepository()
         self._document_store = MinioDocumentStore()
         self._embedding_client = FakeEmbeddingClient()
-        self._credit_system_client = FakeCreditSystemClient()
-        self._ai_gateway_client = FakeAIGatewayClient()
+        self._ai_gateway_client = LLMProxyGatewayClient(base_url=self._settings.llm_proxy_base_url or "")
 
+        self._prompt_assembly_engine = PromptAssemblyEngine()
         self._chunking_engine = ChunkingEngine()
         self._evaluation_engine = SessionEvaluationEngine()
         self._metrics_summary_engine = MetricsSummaryEngine()
@@ -62,10 +63,13 @@ class AppContainer:
             knowledge_repository=self._knowledge_repository,
             embedding_client=self._embedding_client,
         )
-        self._agent_service = AgentService(
+        self._course_agent = LangGraphCourseAgent(
             rag_service=self._rag_service,
             ai_gateway_client=self._ai_gateway_client,
-            credit_system_client=self._credit_system_client,
+            prompt_assembly_engine=self._prompt_assembly_engine,
+        )
+        self._agent_service = AgentService(
+            course_agent=self._course_agent,
         )
         self._metrics_service = MetricsService(
             metrics_repository=self._metrics_repository,

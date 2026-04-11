@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Protocol
 
-from app.domain_models.agent.models import AgentReply, CreditStatus
+from app.domain_models.agent.models import CreditStatus, GatewayPromptReply, GatewayPromptRequest
 from app.domain_models.chat.models import ChatSession
 from app.domain_models.common.ids import DocumentId, SessionId
 from app.domain_models.indexing.models import CatalogCourse, DocumentChunk, UniversityRecord
@@ -47,7 +47,7 @@ class CreditSystemClient(Protocol):
 
 
 class AIGatewayClient(Protocol):
-    def generate_reply(self, prompt: str, context: tuple[RetrievedChunk, ...]) -> AgentReply: ...
+    def generate_reply(self, request: GatewayPromptRequest) -> GatewayPromptReply: ...
 
 
 class MetricsRepository(Protocol):

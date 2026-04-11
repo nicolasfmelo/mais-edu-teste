@@ -28,8 +28,8 @@ Apesar dos nomes de algumas integracoes remeterem a servicos reais, o backend ai
 
 | Componente | Implementacao atual |
 | --- | --- |
-| AI gateway | `FakeAIGatewayClient` retorna uma resposta sintetica com hint de contexto |
-| Credito | `FakeCreditSystemClient` sempre retorna credito disponivel |
+| AI gateway | `LLMProxyGatewayClient` chama o proxy HTTP descrito em `llm-contract.md` |
+| Credito | validado pelo proprio proxy via `x-api-key` |
 | Embeddings | `FakeEmbeddingClient` gera vetores deterministicos simples |
 | Sessoes | `InMemorySessionRepository` |
 | Metricas | `InMemoryMetricsRepository` |
@@ -57,6 +57,7 @@ Esse fluxo foi desenhado para o cenario em que o repositorio e clonado e o ambie
 - `DATABASE_URL`: conexao com o Postgres usada no bootstrap
 - `DATASETS_DIR`: opcional, sobrescreve o caminho padrao `services/datasets`
 - `INDEXING_BOOTSTRAP_ENABLED`: opcional, default `true`
+- `LLM_PROXY_BASE_URL`: opcional, default `https://kviwmiapph.execute-api.us-east-1.amazonaws.com`
 
 ## Arquitetura
 
@@ -119,9 +120,9 @@ O fluxo de chat ilustra bem a arquitetura:
 1. `delivery/http/chat_handler.py` valida a requisicao HTTP.
 2. `delivery/schemas/chat_schemas.py` transforma o payload em `ChatRequest`.
 3. `services/chat/chat_service.py` recupera a sessao, delega ao agente e registra metricas.
-4. `services/agent/agent_service.py` decide consultar credito e RAG.
-5. `services/rag/rag_service.py` usa `EmbeddingClient` + `KnowledgeRepository`.
-6. `integrations/...` executam os adapters concretos configurados no `AppContainer`.
+4. `services/agent/langgraph_course_agent.py` executa o fluxo do agente em LangGraph.
+5. `services/rag/rag_service.py` recupera contexto do catalogo.
+6. `integrations/external_apis/llm_proxy_gateway_client.py` encaminha `prompt`, `model_id` e `x-api-key` para o proxy AWS.
 
 ## Como executar localmente
 
@@ -191,9 +192,14 @@ curl -X POST http://127.0.0.1:8000/api/chat/messages \
   -H "Content-Type: application/json" \
   -d '{
     "session_id": "11111111-1111-1111-1111-111111111111",
-    "message": "Quais faculdades tem curso de ADS em Belo Horizonte?"
+    "message": "Quais cursos combinam com migracao para dados?",
+    "api_key": "key_xxx",
+    "model_id": "us.anthropic.claude-sonnet-4-6",
+    "system_prompt": "Atue como consultora educacional da Clara."
   }'
 ```
+
+O front-end envia `message`, `api_key`, `model_id` e `system_prompt` no body. O backend transforma isso em estado do agente e reenvia a chave para o proxy apenas no header `x-api-key` da chamada externa.
 
 ### Importacao de universidades
 

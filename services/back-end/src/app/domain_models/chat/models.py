@@ -32,6 +32,9 @@ class ChatSession:
 class ChatRequest:
     session_id: SessionId
     message: ChatMessage
+    api_key: str
+    model_id: str | None = None
+    system_prompt: str | None = None
 
 
 @dataclass(frozen=True)

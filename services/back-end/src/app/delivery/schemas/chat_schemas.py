@@ -11,6 +11,9 @@ from app.domain_models.common.ids import MessageId, SessionId
 class ChatMessageRequestSchema(BaseModel):
     session_id: UUID
     message: str = Field(min_length=1)
+    api_key: str = Field(min_length=1)
+    model_id: str | None = None
+    system_prompt: str | None = None
 
     def to_domain(self) -> ChatRequest:
         return ChatRequest(
@@ -20,6 +23,9 @@ class ChatMessageRequestSchema(BaseModel):
                 role=MessageRole.USER,
                 content=self.message,
             ),
+            api_key=self.api_key,
+            model_id=self.model_id,
+            system_prompt=self.system_prompt,
         )
 
 

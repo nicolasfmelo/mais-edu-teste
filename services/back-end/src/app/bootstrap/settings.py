@@ -16,6 +16,7 @@ class AppSettings:
     database_url: str | None
     datasets_dir: Path
     indexing_bootstrap_enabled: bool
+    llm_proxy_base_url: str | None
 
     @classmethod
     def from_env(cls) -> "AppSettings":
@@ -25,4 +26,8 @@ class AppSettings:
             database_url=os.getenv("DATABASE_URL"),
             datasets_dir=datasets_dir,
             indexing_bootstrap_enabled=_as_bool(os.getenv("INDEXING_BOOTSTRAP_ENABLED"), default=True),
+            llm_proxy_base_url=os.getenv(
+                "LLM_PROXY_BASE_URL",
+                "https://kviwmiapph.execute-api.us-east-1.amazonaws.com",
+            ),
         )

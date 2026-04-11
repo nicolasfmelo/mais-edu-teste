@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from app.domain_models.agent.models import AgentReply
+from app.domain_models.agent.models import AgentInvocation, AgentReply
 from app.domain_models.chat.models import ChatMessage, ChatRequest, ChatResponse, ChatSession, MessageRole
 from app.domain_models.common.contracts import SessionRepository
 from app.domain_models.common.ids import MessageId, SessionId
@@ -26,7 +26,15 @@ class ChatService:
 
         agent_reply = self._agent_service.generate_reply(
             session=session_with_user_message,
-            latest_user_message=chat_request.message.content,
+            invocation=AgentInvocation(
+                session_id=chat_request.session_id,
+                api_key=chat_request.api_key,
+                idempotency_key=f"chat-{chat_request.session_id.value}-{chat_request.message.id.value}",
+                latest_user_message=chat_request.message.content,
+                conversation_messages=session_with_user_message.messages,
+                model_id=chat_request.model_id,
+                system_prompt=chat_request.system_prompt,
+            ),
         )
 
         assistant_message = self._create_assistant_message(agent_reply)
