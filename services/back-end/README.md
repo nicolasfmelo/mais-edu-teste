@@ -8,7 +8,7 @@ Backend do MVP **Mais A Educ**, implementado em **Python 3.12 + FastAPI** e orga
 - metricas operacionais simples
 - registro e versionamento de prompts
 
-Hoje o projeto privilegia **fronteiras claras entre camadas**, **injeção explicita de dependencias** e **adapters fake/in-memory** para acelerar a evolucao do dominio antes da integracao com infraestrutura real.
+Hoje o projeto privilegia **fronteiras claras entre camadas**, **injeção explicita de dependencias** e evolucao incremental dos adapters, com persistencia relacional via **SQLAlchemy + Postgres** para a camada transacional principal.
 
 ## Visao geral funcional
 
@@ -24,16 +24,17 @@ O backend expoe uma API HTTP que coordena cinco fluxos principais:
 
 ## Estado atual da infraestrutura
 
-Apesar dos nomes de algumas integracoes remeterem a servicos reais, o backend ainda opera com implementacoes locais para facilitar iteracao:
+Apesar dos nomes de algumas integracoes remeterem a servicos reais, parte da infraestrutura ainda opera com implementacoes locais para facilitar iteracao:
 
 | Componente | Implementacao atual |
 | --- | --- |
 | AI gateway | `LLMProxyGatewayClient` chama o proxy HTTP descrito em `llm-contract.md` |
 | Credito | validado pelo proprio proxy via `x-api-key` |
 | Embeddings | `FakeEmbeddingClient` gera vetores deterministicos simples |
-| Sessoes | `InMemorySessionRepository` |
-| Metricas | `InMemoryMetricsRepository` |
-| Prompt registry | `InMemoryPromptRegistryRepository` |
+| Sessoes | `SQLAlchemySessionRepository` |
+| Metricas | `SQLAlchemyMetricsRepository` |
+| Prompt registry | `SQLAlchemyPromptRegistryRepository` |
+| Catalogo de cursos | `SQLAlchemyCourseCatalogRepository` |
 | Vector store | `QdrantKnowledgeRepository` em memoria |
 | Object store | `MinioDocumentStore` em memoria |
 
@@ -50,7 +51,7 @@ O backend agora suporta um bootstrap inicial de catalogo de cursos em **Postgres
 - em seguida, le todos os arquivos `services/datasets/*.md`
 - cada curso e persistido com `upsert` por `slug`
 
-Esse fluxo foi desenhado para o cenario em que o repositorio e clonado e o ambiente sobe via Docker Compose, garantindo que o catalogo esteja carregado quando a API iniciar.
+Esse fluxo foi desenhado para o cenario em que o repositorio e clonado e o ambiente sobe via Docker Compose, garantindo que o catalogo esteja carregado quando a API iniciar. O mesmo bootstrap de startup tambem cria o schema SQLAlchemy das tabelas transacionais principais.
 
 ### Variaveis de ambiente
 
@@ -58,6 +59,19 @@ Esse fluxo foi desenhado para o cenario em que o repositorio e clonado e o ambie
 - `DATASETS_DIR`: opcional, sobrescreve o caminho padrao `services/datasets`
 - `INDEXING_BOOTSTRAP_ENABLED`: opcional, default `true`
 - `LLM_PROXY_BASE_URL`: opcional, default `https://kviwmiapph.execute-api.us-east-1.amazonaws.com`
+
+## Persistencia relacional atual
+
+O backend agora usa SQLAlchemy como camada de persistencia para:
+
+- `chat_sessions`
+- `chat_messages`
+- `conversation_metrics`
+- `prompt_registry_entries`
+- `prompt_versions`
+- `course_catalog_entries`
+
+No ambiente principal, a expectativa e usar **Postgres** via `DATABASE_URL`. Para testes locais automatizados, o mesmo mapping ORM pode usar SQLite temporario sem alterar services ou handlers.
 
 ## Arquitetura
 
@@ -159,6 +173,15 @@ Aplicacao disponivel em:
 ```bash
 cd services/back-end
 pytest -q
+```
+
+Teste opt-in do chat contra o proxy real:
+
+```bash
+cd services/back-end
+export LLM_PROXY_TEST_API_KEY="key_xxx"
+export LLM_PROXY_BASE_URL="https://kviwmiapph.execute-api.us-east-1.amazonaws.com"
+pytest -q tests/integration/test_chat_live_proxy.py
 ```
 
 Suite atual:

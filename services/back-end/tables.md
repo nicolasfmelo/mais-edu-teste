@@ -7,7 +7,7 @@ Definir o primeiro corte das tabelas do **Postgres** para suportar o fluxo trans
 - sessoes
 - mensagens
 
-Este documento cobre apenas o que entra no banco relacional no primeiro momento. Itens como metricas agregadas, prompt registry, documentos de RAG e chunks ficam fora deste corte.
+Este documento nasceu para o primeiro corte transacional. Hoje ele tambem serve como referencia para a persistencia relacional implementada via **SQLAlchemy**, que ja cobre chat, metricas, prompt registry e catalogo de cursos. Documentos de RAG e chunks continuam fora deste escopo.
 
 ## Escopo deste primeiro corte
 
@@ -18,12 +18,12 @@ Este documento cobre apenas o que entra no banco relacional no primeiro momento.
 | `chat_sessions` | representa a conversa e seu ciclo de vida |
 | `chat_messages` | representa cada mensagem persistida da sessao |
 
-### Fica fora por enquanto
+### Ficava fora no primeiro corte
 
 | Area | Motivo |
 | --- | --- |
-| metricas | podem ser persistidas depois, sem bloquear o chat transacional |
-| prompt registry | e um subdominio separado |
+| metricas | hoje ja persistidas em `conversation_metrics` |
+| prompt registry | hoje ja persistido em `prompt_registry_entries` e `prompt_versions` |
 | documentos/chunks de RAG | tendem a viver em object store + vector store |
 | auditoria detalhada de agente/credito | ainda nao e requisito central do corte inicial |
 
@@ -202,10 +202,46 @@ Se o escopo crescer, os proximos candidatos naturais sao:
 
 - `agent_runs`
 - `session_evaluations`
-- `conversation_metrics`
 - `message_feedback`
-- `prompt_registry_entries`
-- `prompt_versions`
+
+## Tabelas transacionais adicionais implementadas
+
+### `conversation_metrics`
+
+Persistencia simples das metricas gravadas pelo fluxo de chat.
+
+| Coluna | Tipo | Observacao |
+| --- | --- | --- |
+| `id` | `uuid` | identificador tecnico |
+| `session_id` | `uuid` | referencia logica da sessao |
+| `messages_count` | `integer` | quantidade de mensagens apos o turno |
+| `rag_hits` | `integer` | quantidade de chunks recuperados |
+| `used_credit_check` | `boolean` | se o turno consumiu verificacao de credito |
+| `created_at` | `timestamptz` | momento do registro |
+
+### `prompt_registry_entries`
+
+Tabela raiz do prompt registry.
+
+| Coluna | Tipo | Observacao |
+| --- | --- | --- |
+| `key` | `text` | chave normalizada do prompt |
+| `created_at` | `timestamptz` | data de criacao |
+| `updated_at` | `timestamptz` | data da ultima alteracao |
+
+### `prompt_versions`
+
+Tabela de versoes associadas a `prompt_registry_entries`.
+
+| Coluna | Tipo | Observacao |
+| --- | --- | --- |
+| `id` | `uuid` | ID de dominio da versao |
+| `prompt_key` | `text` | FK para `prompt_registry_entries.key` |
+| `version_number` | `integer` | contador incremental por chave |
+| `template` | `text` | template persistido |
+| `description` | `text` | descricao funcional |
+| `is_active` | `boolean` | indica a versao ativa |
+| `created_at` | `timestamptz` | data de criacao |
 
 ## Tabela de indexacao inicial de cursos
 

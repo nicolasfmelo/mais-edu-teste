@@ -14,6 +14,10 @@ class KnowledgeUnavailableError(BackendDomainError):
     """Raised when the knowledge base cannot be queried."""
 
 
+class StorageUnavailableError(BackendDomainError):
+    """Raised when persistent storage cannot be reached or committed."""
+
+
 class LLMProxyConfigurationError(BackendDomainError):
     """Raised when the LLM proxy integration is not configured."""
 

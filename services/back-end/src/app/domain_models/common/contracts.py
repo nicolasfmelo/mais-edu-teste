@@ -40,6 +40,14 @@ class EmbeddingClient(Protocol):
 class CourseCatalogRepository(Protocol):
     def ensure_schema(self) -> None: ...
     def upsert_courses(self, courses: tuple[CatalogCourse, ...]) -> int: ...
+    def search_courses(
+        self,
+        query: str | None = None,
+        *,
+        level: str | None = None,
+        modality: str | None = None,
+        limit: int = 5,
+    ) -> tuple[CatalogCourse, ...]: ...
 
 
 class CreditSystemClient(Protocol):

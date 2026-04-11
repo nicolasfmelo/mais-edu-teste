@@ -6,8 +6,8 @@ from app.integrations.database.sqlalchemy_database import SQLAlchemyDatabase
 from app.services.prompt.prompt_registry_service import PromptRegistryService
 
 
-def test_prompt_registry_service_registers_versions_and_activates_selected_one(tmp_path: Path) -> None:
-    database = SQLAlchemyDatabase(f"sqlite+pysqlite:///{tmp_path / 'service_prompt.db'}")
+def test_sqlalchemy_prompt_registry_repository_registers_versions_and_activates_selected_one(tmp_path: Path) -> None:
+    database = SQLAlchemyDatabase(f"sqlite+pysqlite:///{tmp_path / 'prompt.db'}")
     database.create_schema()
     engine = PromptEngine()
     repository = SQLAlchemyPromptRegistryRepository(database=database, prompt_engine=engine)
