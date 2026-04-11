@@ -207,6 +207,72 @@ Se o escopo crescer, os proximos candidatos naturais sao:
 - `prompt_registry_entries`
 - `prompt_versions`
 
+## Tabela de indexacao inicial de cursos
+
+Para o primeiro corte de busca de cursos sem embeddings, o Postgres tambem pode manter uma tabela relacional simples com uma linha por arquivo Markdown do dataset em `services/datasets/`.
+
+### `course_catalog_entries`
+
+| Coluna | Tipo | Regra | Observacao |
+| --- | --- | --- | --- |
+| `id` | `uuid` | PK | UUID estavel derivado do slug do arquivo |
+| `slug` | `text` | not null unique | nome-base do arquivo `.md` |
+| `title` | `text` | not null | titulo exibido do curso |
+| `level` | `text` | not null | `graduacao`, `pos-graduacao`, `mba` |
+| `modality` | `text` | not null | `ead`, `remoto` |
+| `duration_text` | `text` | not null | ex.: `12 meses`, `4 anos` |
+| `learning_summary` | `text` | not null | secao "O que voce vai aprender" |
+| `market_application` | `text` | not null | secao "Onde aplicar no mercado de trabalho" |
+| `curriculum_text` | `text` | not null | grade curricular consolidada |
+| `search_text` | `text` | not null | texto consolidado para busca simples |
+| `source_path` | `text` | not null | caminho relativo dentro de `services/datasets/` |
+| `created_at` | `timestamptz` | not null default `now()` | primeira carga |
+| `updated_at` | `timestamptz` | not null default `now()` | ultima atualizacao via bootstrap |
+
+### Regras
+
+- `check (level in ('graduacao', 'pos-graduacao', 'mba'))`
+- `check (modality in ('ead', 'remoto'))`
+- `unique (slug)`
+- indices simples por `level` e `modality`
+- carga via `insert ... on conflict (slug) do update`
+
+### DDL de referencia
+
+```sql
+create table if not exists course_catalog_entries (
+    id uuid primary key,
+    slug text not null unique,
+    title text not null,
+    level text not null,
+    modality text not null,
+    duration_text text not null,
+    learning_summary text not null,
+    market_application text not null,
+    curriculum_text text not null,
+    search_text text not null,
+    source_path text not null,
+    created_at timestamptz not null default now(),
+    updated_at timestamptz not null default now(),
+    constraint course_catalog_entries_level_check
+        check (level in ('graduacao', 'pos-graduacao', 'mba')),
+    constraint course_catalog_entries_modality_check
+        check (modality in ('ead', 'remoto'))
+);
+
+create index ix_course_catalog_entries_level
+    on course_catalog_entries (level);
+
+create index ix_course_catalog_entries_modality
+    on course_catalog_entries (modality);
+```
+
+### Uso planejado
+
+- bootstrap automatico no startup da API
+- leitura do dataset local em `services/datasets/*.md`
+- busca inicial com filtros (`level`, `modality`) e texto simples em `search_text`
+
 ## Recomendacao de implementacao
 
 Para o primeiro passo de persistencia real no backend, a ordem sugerida e:

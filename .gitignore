@@ -30,6 +30,18 @@ htmlcov/
 build/
 dist/
 *.egg-info/
+coverage/
+*.tsbuildinfo
+
+# JavaScript/TypeScript workspaces
+**/node_modules/
+**/dist/
+**/dist-ssr/
+**/.vite/
+**/.turbo/
+**/.cache/
+**/.eslintcache
+**/*.local
 
 # Logs
 *.log

@@ -5,7 +5,7 @@ from typing import Protocol
 from app.domain_models.agent.models import AgentReply, CreditStatus
 from app.domain_models.chat.models import ChatSession
 from app.domain_models.common.ids import DocumentId, SessionId
-from app.domain_models.indexing.models import DocumentChunk, UniversityRecord
+from app.domain_models.indexing.models import CatalogCourse, DocumentChunk, UniversityRecord
 from app.domain_models.metrics.models import ConversationMetrics
 from app.domain_models.prompt.models import (
     PromptActivation,
@@ -35,6 +35,11 @@ class DocumentStore(Protocol):
 
 class EmbeddingClient(Protocol):
     def embed_text(self, text: str) -> tuple[float, ...]: ...
+
+
+class CourseCatalogRepository(Protocol):
+    def ensure_schema(self) -> None: ...
+    def upsert_courses(self, courses: tuple[CatalogCourse, ...]) -> int: ...
 
 
 class CreditSystemClient(Protocol):

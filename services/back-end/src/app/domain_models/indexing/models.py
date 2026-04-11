@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from pathlib import Path
+from uuid import UUID, uuid5
 
 from app.domain_models.common.ids import DocumentId
 
@@ -36,3 +38,67 @@ class IndexingJob:
     imported_documents: int
     generated_chunks: int
     document_ids: tuple[DocumentId, ...] = field(default_factory=tuple)
+
+
+@dataclass(frozen=True)
+class CatalogCourse:
+    id: UUID
+    slug: str
+    title: str
+    level: str
+    modality: str
+    duration_text: str
+    learning_summary: str
+    market_application: str
+    curriculum_items: tuple[str, ...]
+    source_path: str
+
+    @classmethod
+    def from_source(
+        cls,
+        slug: str,
+        title: str,
+        level: str,
+        modality: str,
+        duration_text: str,
+        learning_summary: str,
+        market_application: str,
+        curriculum_items: tuple[str, ...],
+        source_path: Path,
+    ) -> "CatalogCourse":
+        return cls(
+            id=uuid5(UUID("6ba7b811-9dad-11d1-80b4-00c04fd430c8"), f"mais-a-educ-course:{slug}"),
+            slug=slug,
+            title=title,
+            level=level,
+            modality=modality,
+            duration_text=duration_text,
+            learning_summary=learning_summary,
+            market_application=market_application,
+            curriculum_items=curriculum_items,
+            source_path=source_path.as_posix(),
+        )
+
+    @property
+    def curriculum_text(self) -> str:
+        return "\n".join(self.curriculum_items)
+
+    @property
+    def search_text(self) -> str:
+        return " ".join(
+            (
+                self.title,
+                self.level,
+                self.modality,
+                self.duration_text,
+                self.learning_summary,
+                self.market_application,
+                " ".join(self.curriculum_items),
+            )
+        )
+
+
+@dataclass(frozen=True)
+class CatalogBootstrapResult:
+    loaded_courses: int
+    upserted_courses: int

@@ -39,6 +39,25 @@ Apesar dos nomes de algumas integracoes remeterem a servicos reais, o backend ai
 
 Isso significa que o projeto ja demonstra o desenho dos contratos e dos fluxos de negocio, mas ainda nao deve ser tratado como backend pronto para producao.
 
+## Bootstrap de indexacao de cursos
+
+O backend agora suporta um bootstrap inicial de catalogo de cursos em **Postgres**, sem embeddings, usando os arquivos Markdown em `services/datasets/`.
+
+### Como funciona
+
+- no startup da aplicacao, o backend verifica `DATABASE_URL`
+- se a variavel estiver configurada, cria a tabela `course_catalog_entries` caso ela nao exista
+- em seguida, le todos os arquivos `services/datasets/*.md`
+- cada curso e persistido com `upsert` por `slug`
+
+Esse fluxo foi desenhado para o cenario em que o repositorio e clonado e o ambiente sobe via Docker Compose, garantindo que o catalogo esteja carregado quando a API iniciar.
+
+### Variaveis de ambiente
+
+- `DATABASE_URL`: conexao com o Postgres usada no bootstrap
+- `DATASETS_DIR`: opcional, sobrescreve o caminho padrao `services/datasets`
+- `INDEXING_BOOTSTRAP_ENABLED`: opcional, default `true`
+
 ## Arquitetura
 
 O codigo fica em `src/app` e segue a separacao por camadas:
@@ -124,6 +143,7 @@ pip install -e ".[dev]"
 ```bash
 cd services/back-end
 source .venv/bin/activate
+export DATABASE_URL="postgresql://user:password@localhost:5432/mais_a_educ"
 uvicorn app.main:app --reload
 ```
 
