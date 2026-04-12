@@ -9,6 +9,7 @@ from fastapi.responses import JSONResponse
 from app.bootstrap.container import AppContainer
 from app.domain_models.common.exceptions import (
     BackendDomainError,
+    ConversationExportError,
     LLMProxyConfigurationError,
     LLMProxyInsufficientCreditError,
     LLMProxyInvocationError,
@@ -46,6 +47,7 @@ def create_application(container: AppContainer | None = None) -> FastAPI:
     application.add_exception_handler(LLMProxyConfigurationError, _handle_configuration_llm_error)
     application.add_exception_handler(LLMProxyInvocationError, _handle_invoke_llm_error)
     application.add_exception_handler(BackendDomainError, _handle_backend_domain_error)
+    application.add_exception_handler(ConversationExportError, _handle_conversation_export_error)
     application.include_router(app_container.build_router())
     return application
 
@@ -72,3 +74,7 @@ async def _handle_invoke_llm_error(_: Request, exc: LLMProxyInvocationError) -> 
 
 async def _handle_backend_domain_error(_: Request, exc: BackendDomainError) -> JSONResponse:
     return JSONResponse(status_code=400, content={"error": str(exc)})
+
+
+async def _handle_conversation_export_error(_: Request, exc: ConversationExportError) -> JSONResponse:
+    return JSONResponse(status_code=502, content={"error": str(exc)})

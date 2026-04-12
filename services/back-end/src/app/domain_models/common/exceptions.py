@@ -40,3 +40,7 @@ class LLMProxyModelNotAllowedError(BackendDomainError):
 
 class LLMProxyInvocationError(BackendDomainError):
     """Raised when the LLM proxy fails to complete the invoke."""
+
+
+class ConversationExportError(BackendDomainError):
+    """Raised when exporting conversations to object storage fails."""

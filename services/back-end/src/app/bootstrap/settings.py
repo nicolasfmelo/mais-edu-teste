@@ -41,22 +41,35 @@ def _require_postgres_database_url() -> str:
     return database_url
 
 
+def _require_minio_credentials() -> tuple[str, str]:
+    access_key = os.getenv("MINIO_ACCESS_KEY")
+    secret_key = os.getenv("MINIO_SECRET_KEY")
+    assert access_key, "MINIO_ACCESS_KEY must be set."
+    assert secret_key, "MINIO_SECRET_KEY must be set."
+    return access_key, secret_key
+
+
 @dataclass(frozen=True)
 class AppSettings:
     database_url: str
     datasets_dir: Path
     indexing_bootstrap_enabled: bool
     llm_proxy_base_url: str | None
+    minio_access_key: str
+    minio_secret_key: str
     assistant_model_allowlist: tuple[str, ...] = field(default_factory=_default_assistant_model_allowlist)
     institution_profile_path: Path = field(default_factory=_default_institution_profile_path)
     cors_allowed_origins: tuple[str, ...] = field(
         default=("http://0.0.0.0:5173", "http://localhost:5173", "http://0.0.0.0:5174", "http://localhost:5174")
     )
+    minio_endpoint: str = "localhost:9000"
+    minio_export_bucket: str = "conversations"
 
     @classmethod
     def from_env(cls) -> "AppSettings":
         repo_root = Path(__file__).resolve().parents[5]
         datasets_dir = Path(os.getenv("DATASETS_DIR", str(repo_root / "services" / "datasets"))).expanduser()
+        minio_access_key, minio_secret_key = _require_minio_credentials()
         return cls(
             database_url=_require_postgres_database_url(),
             datasets_dir=datasets_dir,
@@ -79,4 +92,8 @@ class AppSettings:
                 os.getenv("CORS_ALLOWED_ORIGINS"),
                 default=("http://0.0.0.0:5173", "http://localhost:5173", "http://0.0.0.0:5174", "http://localhost:5174"),
             ),
+            minio_endpoint=os.getenv("MINIO_ENDPOINT", "localhost:9000"),
+            minio_access_key=minio_access_key,
+            minio_secret_key=minio_secret_key,
+            minio_export_bucket=os.getenv("MINIO_EXPORT_BUCKET", "conversations"),
         )

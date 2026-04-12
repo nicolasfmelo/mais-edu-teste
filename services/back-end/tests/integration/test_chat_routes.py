@@ -16,6 +16,8 @@ def test_chat_routes_support_listing_loading_and_sending_messages(tmp_path: Path
             indexing_bootstrap_enabled=False,
             llm_proxy_base_url="https://example.invalid",
             cors_allowed_origins=("http://localhost:5173",),
+            minio_access_key="test-access-key",
+            minio_secret_key="test-secret-key",
         )
     )
     container._ai_gateway_client.generate_reply = lambda request: GatewayPromptReply(  # type: ignore[method-assign]

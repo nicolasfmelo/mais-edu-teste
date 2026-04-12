@@ -16,6 +16,8 @@ def test_prompt_registry_routes_support_registration_versioning_and_activation(t
                     datasets_dir=tmp_path / "datasets",
                     indexing_bootstrap_enabled=False,
                     llm_proxy_base_url="https://example.invalid",
+                    minio_access_key="test-access-key",
+                    minio_secret_key="test-secret-key",
                 )
             )
         )

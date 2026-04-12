@@ -34,6 +34,8 @@ def test_chat_messages_route_can_call_live_llm_proxy(tmp_path) -> None:  # noqa:
                         "LLM_PROXY_BASE_URL",
                         "https://kviwmiapph.execute-api.us-east-1.amazonaws.com",
                     ),
+                    minio_access_key="test-access-key",
+                    minio_secret_key="test-secret-key",
                 )
             )
         )

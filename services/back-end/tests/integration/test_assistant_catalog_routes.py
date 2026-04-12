@@ -17,6 +17,8 @@ def test_assistant_catalog_routes_expose_models_and_current_credit_balance(tmp_p
             indexing_bootstrap_enabled=False,
             llm_proxy_base_url="https://example.invalid",
             cors_allowed_origins=("http://localhost:5173",),
+            minio_access_key="test-access-key",
+            minio_secret_key="test-secret-key",
         )
     )
     container._ai_gateway_client.get_credit_balance = lambda api_key: CreditBalance(  # type: ignore[method-assign]
