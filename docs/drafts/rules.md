@@ -4,6 +4,9 @@
 
 Definir uma régua de avaliação com lógica parecida com NPS, mas aplicada à **qualidade percebida pelo cliente** em conversas com a IA operadora.
 
+ - **Criação de um agente de análise e ferramentas auxiliares para contagem**
+ - **O Agent irá usar uma tabela para processar os arquivos da conversa que está em um json no minio**
+
 O foco principal desta avaliação é:
 
 1. **Satisfação do cliente**
@@ -11,6 +14,8 @@ O foco principal desta avaliação é:
 3. **Capacidade da IA operadora de entender o objetivo da conversa**
 4. **Capacidade da IA operadora de conduzir a conversa até uma conclusão útil**
 5. **Mudanças comportamentais do cliente ao longo da sessão**
+6. **Token usage por análise**
+7. **Token usage no longo do tempo**
 
 > Regra central: a leitura da conversa deve ser feita **pela perspectiva do cliente**, não pela perspectiva da IA operadora.
 

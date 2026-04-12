@@ -1,13 +1,15 @@
-import { ChartColumn, ChevronDown, KeyRound, Plus, Sparkles, Wallet, Workflow } from 'lucide-react'
+import { BookOpen, ChartColumn, ChevronDown, KeyRound, MessageSquare, Plus, Sparkles, Wallet, Workflow } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import type { ModelOption } from '@/lib/chat-ui'
 
-export type AppPage = 'chat' | 'metrics'
+export type AppPage = 'chat' | 'metrics' | 'llmops' | 'docs'
 
 const quickRoutes: { label: string; icon: typeof ChartColumn; page: AppPage }[] = [
-  { label: 'Metrics Page', icon: ChartColumn, page: 'metrics' },
-  { label: 'LLMOps Page', icon: Workflow, page: 'chat' },
+  { label: 'Chat', icon: MessageSquare, page: 'chat' },
+  { label: 'Metrics', icon: ChartColumn, page: 'metrics' },
+  { label: 'LLMOps', icon: Workflow, page: 'llmops' },
+  { label: 'Solution Docs', icon: BookOpen, page: 'docs' },
 ]
 
 type AppToolbarProps = {
@@ -87,8 +89,8 @@ export function AppToolbar({
         </div>
 
         <div className="min-w-0 flex-1 xl:px-5">
-          <div className="rounded-[20px] border border-black/6 bg-white px-4 py-3">
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+          <div className="rounded-[20px] border border-black/6 bg-white px-3 py-1.5">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
               <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-[#667781]">
                 active assistant
               </span>
@@ -117,10 +119,10 @@ export function AppToolbar({
               type="button"
               variant="ghost"
               onClick={() => onNavigateTo(page)}
-              className={`rounded-full border px-3.5 ${
+              className={`rounded-full border px-3.5 text-sm font-medium transition ${
                 activePage === page
-                  ? 'border-[#00a884]/30 bg-[#d9fdd3] text-[#0b5c4b] hover:bg-[#c8f5c8]'
-                  : 'border-black/6 bg-white text-[#667781] hover:bg-[#f5f6f6] hover:text-[#111b21]'
+                  ? 'border-[#00a884] bg-[#00a884] text-white hover:bg-[#009977]'
+                  : 'border-[#00a884]/40 bg-white text-[#00a884] hover:bg-[#f0fdf9] hover:border-[#00a884]/70'
               }`}
             >
               <Icon className="size-4" />

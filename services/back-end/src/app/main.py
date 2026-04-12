@@ -19,7 +19,7 @@ from app.domain_models.common.exceptions import (
 
 def _resolve_cors_origins(container: object) -> list[str]:
     settings = getattr(container, "_settings", None)
-    origins = getattr(settings, "cors_allowed_origins", ("http://0.0.0.0:5173", "http://localhost:5173"))
+    origins = getattr(settings, "cors_allowed_origins", ("*"))
     return list(origins)
 
 

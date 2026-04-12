@@ -50,7 +50,7 @@ class AppSettings:
     assistant_model_allowlist: tuple[str, ...] = field(default_factory=_default_assistant_model_allowlist)
     institution_profile_path: Path = field(default_factory=_default_institution_profile_path)
     cors_allowed_origins: tuple[str, ...] = field(
-        default=("http://0.0.0.0:5173", "http://localhost:5173")
+        default=("http://0.0.0.0:5173", "http://localhost:5173", "http://0.0.0.0:5174", "http://localhost:5174")
     )
 
     @classmethod
@@ -77,6 +77,6 @@ class AppSettings:
             ).expanduser(),
             cors_allowed_origins=_as_tuple(
                 os.getenv("CORS_ALLOWED_ORIGINS"),
-                default=("http://0.0.0.0:5173", "http://localhost:5173"),
+                default=("http://0.0.0.0:5173", "http://localhost:5173", "http://0.0.0.0:5174", "http://localhost:5174"),
             ),
         )

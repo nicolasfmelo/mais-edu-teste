@@ -3,6 +3,8 @@ import { ApiKeyModal } from '@/components/chat/api-key-modal'
 import { AppToolbar, type AppPage } from '@/components/chat/app-toolbar'
 import { ChatPanel } from '@/components/chat/chat-panel'
 import { ThreadSidebar } from '@/components/chat/thread-sidebar'
+import { DocsPage } from '@/components/docs/docs-page'
+import { LLMOpsPage } from '@/components/llmops/llmops-page'
 import { MetricsPage } from '@/components/metrics/metrics-page'
 import { useChatWorkspace } from '@/hooks/use-chat-workspace'
 
@@ -33,6 +35,10 @@ function App() {
 
         {activePage === 'metrics' ? (
           <MetricsPage />
+        ) : activePage === 'llmops' ? (
+          <LLMOpsPage />
+        ) : activePage === 'docs' ? (
+          <DocsPage />
         ) : (
           <section className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[340px_minmax(0,1fr)]">
             <ThreadSidebar
