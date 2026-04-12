@@ -3,9 +3,11 @@ import { ChartColumn, ChevronDown, KeyRound, Plus, Sparkles, Wallet, Workflow } 
 import { Button } from '@/components/ui/button'
 import type { ModelOption } from '@/lib/chat-ui'
 
-const quickRoutes = [
-  { label: 'Metrics Page', icon: ChartColumn },
-  { label: 'LLMOps Page', icon: Workflow },
+export type AppPage = 'chat' | 'metrics'
+
+const quickRoutes: { label: string; icon: typeof ChartColumn; page: AppPage }[] = [
+  { label: 'Metrics Page', icon: ChartColumn, page: 'metrics' },
+  { label: 'LLMOps Page', icon: Workflow, page: 'chat' },
 ]
 
 type AppToolbarProps = {
@@ -16,10 +18,12 @@ type AppToolbarProps = {
   isCreatingThread: boolean
   credits: number | null
   apiKey: string
+  activePage: AppPage
   onToggleModelMenu: () => void
   onSelectModel: (modelId: string) => void
   onCreateThread: () => void
   onOpenApiKeyModal: () => void
+  onNavigateTo: (page: AppPage) => void
 }
 
 export function AppToolbar({
@@ -30,10 +34,12 @@ export function AppToolbar({
   isCreatingThread,
   credits,
   apiKey,
+  activePage,
   onToggleModelMenu,
   onSelectModel,
   onCreateThread,
   onOpenApiKeyModal,
+  onNavigateTo,
 }: AppToolbarProps) {
   return (
     <header className="border-b border-black/8 bg-[#f7f8fa] px-4 py-3 sm:px-5">
@@ -105,12 +111,17 @@ export function AppToolbar({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          {quickRoutes.map(({ label, icon: Icon }) => (
+          {quickRoutes.map(({ label, icon: Icon, page }) => (
             <Button
               key={label}
               type="button"
               variant="ghost"
-              className="rounded-full border border-black/6 bg-white px-3.5 text-[#667781] hover:bg-[#f5f6f6] hover:text-[#111b21]"
+              onClick={() => onNavigateTo(page)}
+              className={`rounded-full border px-3.5 ${
+                activePage === page
+                  ? 'border-[#00a884]/30 bg-[#d9fdd3] text-[#0b5c4b] hover:bg-[#c8f5c8]'
+                  : 'border-black/6 bg-white text-[#667781] hover:bg-[#f5f6f6] hover:text-[#111b21]'
+              }`}
             >
               <Icon className="size-4" />
               {label}

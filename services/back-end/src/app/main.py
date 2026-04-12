@@ -72,6 +72,3 @@ async def _handle_invoke_llm_error(_: Request, exc: LLMProxyInvocationError) -> 
 
 async def _handle_backend_domain_error(_: Request, exc: BackendDomainError) -> JSONResponse:
     return JSONResponse(status_code=400, content={"error": str(exc)})
-
-
-app = create_application()

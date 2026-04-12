@@ -32,6 +32,15 @@ def _default_assistant_model_allowlist() -> tuple[str, ...]:
     )
 
 
+def _require_postgres_database_url() -> str:
+    database_url = os.getenv("DATABASE_URL")
+    assert database_url, "DATABASE_URL must be set to a PostgreSQL connection string."
+    assert database_url.startswith(("postgresql://", "postgresql+")), (
+        "DATABASE_URL must use a PostgreSQL connection string."
+    )
+    return database_url
+
+
 @dataclass(frozen=True)
 class AppSettings:
     database_url: str
@@ -48,9 +57,8 @@ class AppSettings:
     def from_env(cls) -> "AppSettings":
         repo_root = Path(__file__).resolve().parents[5]
         datasets_dir = Path(os.getenv("DATASETS_DIR", str(repo_root / "services" / "datasets"))).expanduser()
-        default_database_path = repo_root / "services" / "back-end" / ".mais_a_educ.db"
         return cls(
-            database_url=os.getenv("DATABASE_URL", f"sqlite+pysqlite:///{default_database_path}"),
+            database_url=_require_postgres_database_url(),
             datasets_dir=datasets_dir,
             indexing_bootstrap_enabled=_as_bool(os.getenv("INDEXING_BOOTSTRAP_ENABLED"), default=True),
             llm_proxy_base_url=os.getenv(

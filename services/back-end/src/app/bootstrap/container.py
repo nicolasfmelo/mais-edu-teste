@@ -13,6 +13,7 @@ from app.delivery.http.metrics_handler import MetricsHandler
 from app.delivery.http.prompt_registry_handler import PromptRegistryHandler
 from app.domain_models.agent.models import AssistantModel
 from app.engines.agent.prompt_assembly_engine import PromptAssemblyEngine
+from app.engines.evaluation.evaluations_summary_engine import EvaluationsSummaryEngine
 from app.engines.evaluation.session_evaluation_engine import SessionEvaluationEngine
 from app.engines.indexing.chunking_engine import ChunkingEngine
 from app.engines.indexing.course_catalog_knowledge_engine import CourseCatalogKnowledgeEngine
@@ -88,6 +89,7 @@ class AppContainer:
         self._prompt_assembly_engine = PromptAssemblyEngine(institution_profile=self._institution_profile)
         self._chunking_engine = ChunkingEngine()
         self._evaluation_engine = SessionEvaluationEngine()
+        self._evaluations_summary_engine = EvaluationsSummaryEngine()
         self._metrics_summary_engine = MetricsSummaryEngine()
         self._prompt_engine = PromptEngine()
         self._course_catalog_knowledge_engine = CourseCatalogKnowledgeEngine()
@@ -131,6 +133,7 @@ class AppContainer:
         self._evaluation_service = EvaluationService(
             session_repository=self._session_repository,
             evaluation_engine=self._evaluation_engine,
+            evaluations_summary_engine=self._evaluations_summary_engine,
         )
         self._prompt_registry_service = PromptRegistryService(
             prompt_registry_repository=self._prompt_registry_repository,

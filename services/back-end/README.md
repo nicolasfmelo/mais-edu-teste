@@ -46,8 +46,8 @@ O backend agora suporta um bootstrap inicial de catalogo de cursos em **Postgres
 
 ### Como funciona
 
-- no startup da aplicacao, o backend verifica `DATABASE_URL`
-- se a variavel estiver configurada, cria a tabela `course_catalog_entries` caso ela nao exista
+- no startup da aplicacao, o backend exige `DATABASE_URL` apontando para Postgres
+- com a variavel configurada, cria a tabela `course_catalog_entries` caso ela nao exista
 - em seguida, le todos os arquivos `services/datasets/*.md`
 - cada curso e persistido com `upsert` por `slug`
 

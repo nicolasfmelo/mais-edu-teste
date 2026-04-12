@@ -54,9 +54,10 @@ def main() -> None:
 
     args = _build_parser().parse_args()
     uvicorn.run(
-        "app.main:app",
+        "app.main:create_application",
         host=args.host,
         port=args.port,
+        factory=True,
         reload=args.reload,
         reload_dirs=[str(src_dir)],
     )

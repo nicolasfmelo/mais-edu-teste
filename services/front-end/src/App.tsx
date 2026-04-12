@@ -1,11 +1,14 @@
+import { useState } from 'react'
 import { ApiKeyModal } from '@/components/chat/api-key-modal'
-import { AppToolbar } from '@/components/chat/app-toolbar'
+import { AppToolbar, type AppPage } from '@/components/chat/app-toolbar'
 import { ChatPanel } from '@/components/chat/chat-panel'
 import { ThreadSidebar } from '@/components/chat/thread-sidebar'
+import { MetricsPage } from '@/components/metrics/metrics-page'
 import { useChatWorkspace } from '@/hooks/use-chat-workspace'
 
 function App() {
   const workspace = useChatWorkspace()
+  const [activePage, setActivePage] = useState<AppPage>('chat')
 
   return (
     <main className="dark h-screen overflow-hidden bg-[linear-gradient(180deg,#00a884_0,#00a884_152px,#e9edef_152px,#d1d7db_100%)] px-3 py-5 text-foreground sm:px-5 lg:px-8">
@@ -18,43 +21,49 @@ function App() {
           isCreatingThread={workspace.isCreatingThread}
           credits={workspace.credits}
           apiKey={workspace.apiKey}
+          activePage={activePage}
           onToggleModelMenu={workspace.toggleModelMenu}
           onSelectModel={workspace.selectModel}
           onCreateThread={() => {
             void workspace.createThread()
           }}
           onOpenApiKeyModal={workspace.openApiKeyModal}
+          onNavigateTo={setActivePage}
         />
 
-        <section className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[340px_minmax(0,1fr)]">
-          <ThreadSidebar
-            threads={workspace.threads}
-            activeThreadId={workspace.activeThreadId}
-            isBootstrapping={workspace.isBootstrapping}
-            onSelectThread={workspace.selectThread}
-          />
-          <ChatPanel
-            activeThreadInitials={workspace.activeThreadInitials}
-            activeThreadName={workspace.activeThreadName}
-            activeModelLabel={workspace.activeModel.label}
-            infoBannerMessage={workspace.infoBannerMessage}
-            errorMessage={workspace.errorMessage}
-            chatScrollRef={workspace.chatScrollRef}
-            onChatScroll={workspace.handleChatScroll}
-            isLoadingThread={workspace.isLoadingThread}
-            activeMessages={workspace.activeMessages}
-            draft={workspace.draft}
-            onDraftChange={workspace.setDraft}
-            onDraftKeyDown={workspace.handleComposerKeyDown}
-            isBootstrapping={workspace.isBootstrapping}
-            isSending={workspace.isSending}
-            hasActiveThread={Boolean(workspace.activeThreadId)}
-            onSend={() => {
-              void workspace.sendMessage()
-            }}
-            composerDisabled={workspace.composerDisabled}
-          />
-        </section>
+        {activePage === 'metrics' ? (
+          <MetricsPage />
+        ) : (
+          <section className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[340px_minmax(0,1fr)]">
+            <ThreadSidebar
+              threads={workspace.threads}
+              activeThreadId={workspace.activeThreadId}
+              isBootstrapping={workspace.isBootstrapping}
+              onSelectThread={workspace.selectThread}
+            />
+            <ChatPanel
+              activeThreadInitials={workspace.activeThreadInitials}
+              activeThreadName={workspace.activeThreadName}
+              activeModelLabel={workspace.activeModel.label}
+              infoBannerMessage={workspace.infoBannerMessage}
+              errorMessage={workspace.errorMessage}
+              chatScrollRef={workspace.chatScrollRef}
+              onChatScroll={workspace.handleChatScroll}
+              isLoadingThread={workspace.isLoadingThread}
+              activeMessages={workspace.activeMessages}
+              draft={workspace.draft}
+              onDraftChange={workspace.setDraft}
+              onDraftKeyDown={workspace.handleComposerKeyDown}
+              isBootstrapping={workspace.isBootstrapping}
+              isSending={workspace.isSending}
+              hasActiveThread={Boolean(workspace.activeThreadId)}
+              onSend={() => {
+                void workspace.sendMessage()
+              }}
+              composerDisabled={workspace.composerDisabled}
+            />
+          </section>
+        )}
       </div>
 
       {workspace.apiKeyModalOpen ? (
