@@ -1,42 +1,148 @@
-import { useEffect, useState } from 'react'
-import { getEvaluationsSummary, getMetricsSummary, type EvaluationsSummary, type MetricsSummary } from '@/lib/metrics-api'
+import { useCallback, useEffect, useState } from 'react'
+import {
+  exportConversations,
+  getAgentSessionDetail,
+  getAgentSessions,
+  getCreditBalance,
+  getEvaluationsSummary,
+  getLatestAnalysisJob,
+  getLatestExportJob,
+  getMetricsSummary,
+  runAgentAnalysis,
+  type AgentSessionDetail,
+  type AgentSessionListItem,
+  type EvaluationsSummary,
+  type MetricsJob,
+  type MetricsSummary,
+} from '@/lib/metrics-api'
 
 export type MetricsPageData = {
   metricsSummary: MetricsSummary | null
   evaluationsSummary: EvaluationsSummary | null
+  exportJob: MetricsJob | null
+  analysisJob: MetricsJob | null
+  creditBalance: number | null
+  agentSessions: AgentSessionListItem[]
   isLoading: boolean
+  isSyncing: boolean
+  isAnalyzing: boolean
   error: string | null
+  syncConversations: () => Promise<void>
+  runAnalysis: () => Promise<void>
+  loadAgentSessionDetail: (sessionId: string) => Promise<AgentSessionDetail>
 }
 
-export function useMetricsPage(): MetricsPageData {
+export function useMetricsPage(apiKey: string): MetricsPageData {
   const [metricsSummary, setMetricsSummary] = useState<MetricsSummary | null>(null)
   const [evaluationsSummary, setEvaluationsSummary] = useState<EvaluationsSummary | null>(null)
+  const [exportJob, setExportJob] = useState<MetricsJob | null>(null)
+  const [analysisJob, setAnalysisJob] = useState<MetricsJob | null>(null)
+  const [creditBalance, setCreditBalance] = useState<number | null>(null)
+  const [agentSessions, setAgentSessions] = useState<AgentSessionListItem[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [isSyncing, setIsSyncing] = useState(false)
+  const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    let cancelled = false
-
-    const load = async () => {
-      setIsLoading(true)
-      setError(null)
-      try {
-        const [metrics, evaluations] = await Promise.all([getMetricsSummary(), getEvaluationsSummary()])
-        if (cancelled) return
-        setMetricsSummary(metrics)
-        setEvaluationsSummary(evaluations)
-      } catch {
-        if (!cancelled) setError('Não foi possível carregar as métricas.')
-      } finally {
-        if (!cancelled) setIsLoading(false)
-      }
+  const loadAll = useCallback(async (cancelled?: { current: boolean }) => {
+    setIsLoading(true)
+    setError(null)
+    try {
+      const [metrics, evaluations, exportJobResult, analysisJobResult, sessions] = await Promise.all([
+        getMetricsSummary(),
+        getEvaluationsSummary(),
+        getLatestExportJob(),
+        getLatestAnalysisJob(),
+        getAgentSessions(),
+      ])
+      if (cancelled?.current) return
+      setMetricsSummary(metrics)
+      setEvaluationsSummary(evaluations)
+      setExportJob(exportJobResult)
+      setAnalysisJob(analysisJobResult)
+      setAgentSessions(sessions)
+    } catch {
+      if (!cancelled?.current) setError('Não foi possível carregar as métricas.')
+    } finally {
+      if (!cancelled?.current) setIsLoading(false)
     }
 
-    void load()
+    if (apiKey.trim()) {
+      try {
+        const balance = await getCreditBalance(apiKey.trim())
+        if (!cancelled?.current) setCreditBalance(balance.available)
+      } catch {
+        if (!cancelled?.current) setCreditBalance(null)
+      }
+    } else {
+      if (!cancelled?.current) setCreditBalance(null)
+    }
+  }, [apiKey])
+
+  useEffect(() => {
+    const cancelled = { current: false }
+    void loadAll(cancelled)
     return () => {
-      cancelled = true
+      cancelled.current = true
+    }
+  }, [loadAll])
+
+  const syncConversations = useCallback(async () => {
+    setIsSyncing(true)
+    setError(null)
+    try {
+      await exportConversations()
+      const job = await getLatestExportJob()
+      setExportJob(job)
+    } catch {
+      setError('Falha ao sincronizar conversas com o MinIO.')
+    } finally {
+      setIsSyncing(false)
     }
   }, [])
 
-  return { metricsSummary, evaluationsSummary, isLoading, error }
+  const runAnalysis = useCallback(async () => {
+    if (!apiKey.trim()) {
+      setError('Configure a API Key no painel do chat antes de rodar a análise.')
+      return
+    }
+    setIsAnalyzing(true)
+    setError(null)
+    try {
+      await runAgentAnalysis(apiKey.trim())
+      const [evaluations, job, sessions] = await Promise.all([
+        getEvaluationsSummary(),
+        getLatestAnalysisJob(),
+        getAgentSessions(),
+      ])
+      setEvaluationsSummary(evaluations)
+      setAnalysisJob(job)
+      setAgentSessions(sessions)
+    } catch {
+      setError('Falha ao executar a análise do agente.')
+    } finally {
+      setIsAnalyzing(false)
+    }
+  }, [apiKey])
+
+  const loadAgentSessionDetail = useCallback(
+    (sessionId: string) => getAgentSessionDetail(sessionId),
+    [],
+  )
+
+  return {
+    metricsSummary,
+    evaluationsSummary,
+    exportJob,
+    analysisJob,
+    creditBalance,
+    agentSessions,
+    isLoading,
+    isSyncing,
+    isAnalyzing,
+    error,
+    syncConversations,
+    runAnalysis,
+    loadAgentSessionDetail,
+  }
 }

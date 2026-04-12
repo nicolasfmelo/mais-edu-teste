@@ -34,7 +34,7 @@ function App() {
         />
 
         {activePage === 'metrics' ? (
-          <MetricsPage />
+          <MetricsPage apiKey={workspace.apiKey} />
         ) : activePage === 'llmops' ? (
           <LLMOpsPage />
         ) : activePage === 'docs' ? (

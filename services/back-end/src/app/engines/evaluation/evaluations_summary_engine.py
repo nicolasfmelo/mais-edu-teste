@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from app.domain_models.evaluation.models import EvaluationsSummary, SatisfactionClass, SessionEvaluation
+from app.domain_models.evaluation.models import BehaviorChange, EvaluationsSummary, SatisfactionClass, SessionEvaluation
 
 
 class EvaluationsSummaryEngine:
@@ -31,6 +31,13 @@ class EvaluationsSummaryEngine:
         pct_neutro = round(count_neutro / total * 100, 1)
         pct_ruim = round(count_ruim / total * 100, 1)
 
+        total_tokens = sum(e.token_usage.total_tokens for e in evaluations if e.token_usage is not None)
+
+        count_mudanca_positiva = sum(1 for e in evaluations if e.mudanca_comportamental == BehaviorChange.POSITIVE)
+        count_mudanca_neutra = sum(1 for e in evaluations if e.mudanca_comportamental == BehaviorChange.NEUTRAL)
+        count_mudanca_negativa = sum(1 for e in evaluations if e.mudanca_comportamental == BehaviorChange.NEGATIVE)
+        count_injection = sum(1 for e in evaluations if e.prompt_injection_detected)
+
         return EvaluationsSummary(
             total_evaluated=total,
             count_bom=count_bom,
@@ -43,4 +50,10 @@ class EvaluationsSummaryEngine:
             avg_effort=round(sum(e.effort_score for e in evaluations) / total, 2),
             avg_understanding=round(sum(e.understanding_score for e in evaluations) / total, 2),
             avg_resolution=round(sum(e.resolution_score for e in evaluations) / total, 2),
+            total_tokens_used=total_tokens,
+            count_mudanca_positiva=count_mudanca_positiva,
+            count_mudanca_neutra=count_mudanca_neutra,
+            count_mudanca_negativa=count_mudanca_negativa,
+            count_injection_detected=count_injection,
+            pct_injection_detected=round(count_injection / total * 100, 1),
         )

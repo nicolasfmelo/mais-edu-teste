@@ -44,3 +44,11 @@ class LLMProxyInvocationError(BackendDomainError):
 
 class ConversationExportError(BackendDomainError):
     """Raised when exporting conversations to object storage fails."""
+
+
+class ConversationAnalysisError(BackendDomainError):
+    """Raised when reading or analyzing conversations from object storage fails."""
+
+
+class EvaluationNotFoundError(BackendDomainError):
+    """Raised when an agent evaluation record cannot be found."""

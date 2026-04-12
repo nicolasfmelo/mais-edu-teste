@@ -49,6 +49,14 @@ def _require_minio_credentials() -> tuple[str, str]:
     return access_key, secret_key
 
 
+def _strip_url_scheme(endpoint: str) -> str:
+    """Remove http:// or https:// prefix so the MinIO client can add it."""
+    for scheme in ("https://", "http://"):
+        if endpoint.startswith(scheme):
+            return endpoint[len(scheme):]
+    return endpoint
+
+
 @dataclass(frozen=True)
 class AppSettings:
     database_url: str
@@ -92,7 +100,7 @@ class AppSettings:
                 os.getenv("CORS_ALLOWED_ORIGINS"),
                 default=("http://0.0.0.0:5173", "http://localhost:5173", "http://0.0.0.0:5174", "http://localhost:5174"),
             ),
-            minio_endpoint=os.getenv("MINIO_ENDPOINT", "localhost:9000"),
+            minio_endpoint=_strip_url_scheme(os.getenv("MINIO_ENDPOINT", "localhost:9000")),
             minio_access_key=minio_access_key,
             minio_secret_key=minio_secret_key,
             minio_export_bucket=os.getenv("MINIO_EXPORT_BUCKET", "conversations"),
