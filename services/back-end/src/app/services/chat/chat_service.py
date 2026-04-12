@@ -38,22 +38,27 @@ class ChatService:
         )
 
         assistant_message = self._create_assistant_message(agent_reply)
-        updated_session = session_with_user_message.append(assistant_message)
-        self._session_repository.save(updated_session)
+        persisted_session = self._session_repository.save(session_with_user_message.append(assistant_message))
 
         self._metrics_service.record(
             ConversationMetrics(
-                session_id=updated_session.id,
-                messages_count=len(updated_session.messages),
+                session_id=persisted_session.id,
+                messages_count=len(persisted_session.messages),
                 rag_hits=len(agent_reply.retrieved_chunks),
-                used_credit_check=len(updated_session.messages) <= 2,
+                used_credit_check=len(persisted_session.messages) <= 2,
             )
         )
 
-        return ChatResponse(session_id=updated_session.id, reply=assistant_message)
+        return ChatResponse(session_id=persisted_session.id, reply=persisted_session.messages[-1])
 
     def get_session(self, session_id: SessionId) -> ChatSession:
         return self._session_repository.find_by_id(session_id)
+
+    def list_sessions(self) -> tuple[ChatSession, ...]:
+        return self._session_repository.list_all()
+
+    def create_session(self) -> ChatSession:
+        return self._session_repository.save(ChatSession(id=SessionId.new()))
 
     def _create_assistant_message(self, agent_reply: AgentReply) -> ChatMessage:
         return ChatMessage(

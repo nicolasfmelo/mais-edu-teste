@@ -153,20 +153,48 @@ source .venv/bin/activate
 pip install -e ".[dev]"
 ```
 
+### Subir o Postgres local
+
+```bash
+cd <repo-root>
+docker compose up -d postgres
+```
+
+Neste MVP monorepo, o `compose.yaml` fica na **raiz do repositorio** e centraliza os containers compartilhados entre front e back.
+
+Defaults do container:
+
+- `POSTGRES_DB=mais_a_educ`
+- `POSTGRES_USER=postgres`
+- `POSTGRES_PASSWORD=postgres`
+- `POSTGRES_PORT=5432`
+
+A `DATABASE_URL` correspondente para rodar o backend fora do container fica:
+
+```bash
+export DATABASE_URL="postgresql://postgres:postgres@localhost:5432/mais_a_educ"
+```
+
 ### Subir a API
 
 ```bash
 cd services/back-end
 source .venv/bin/activate
-export DATABASE_URL="postgresql://user:password@localhost:5432/mais_a_educ"
-uvicorn app.main:app --reload
+export DATABASE_URL="postgresql://postgres:postgres@localhost:5432/mais_a_educ"
+python run_local.py
+```
+
+O script `run_local.py` carrega `.env` automaticamente quando o arquivo existe e aceita overrides opcionais:
+
+```bash
+python run_local.py --host 0.0.0.0 --port 8000 --reload
 ```
 
 Aplicacao disponivel em:
 
-- `http://127.0.0.1:8000`
-- Swagger UI: `http://127.0.0.1:8000/docs`
-- ReDoc: `http://127.0.0.1:8000/redoc`
+- `http://0.0.0.0:8000`
+- Swagger UI: `http://0.0.0.0:8000/docs`
+- ReDoc: `http://0.0.0.0:8000/redoc`
 
 ## Testes
 
@@ -211,7 +239,7 @@ Suite atual:
 ### Chat
 
 ```bash
-curl -X POST http://127.0.0.1:8000/api/chat/messages \
+curl -X POST http://0.0.0.0:8000/api/chat/messages \
   -H "Content-Type: application/json" \
   -d '{
     "session_id": "11111111-1111-1111-1111-111111111111",
@@ -227,7 +255,7 @@ O front-end envia `message`, `api_key`, `model_id` e `system_prompt` no body. O 
 ### Importacao de universidades
 
 ```bash
-curl -X POST http://127.0.0.1:8000/api/indexing/universities/import \
+curl -X POST http://0.0.0.0:8000/api/indexing/universities/import \
   -H "Content-Type: application/json" \
   -d '{
     "dataset_name": "universidades-demo",
@@ -246,7 +274,7 @@ curl -X POST http://127.0.0.1:8000/api/indexing/universities/import \
 ### Cadastro de prompt
 
 ```bash
-curl -X POST http://127.0.0.1:8000/api/prompt-registry/prompts \
+curl -X POST http://0.0.0.0:8000/api/prompt-registry/prompts \
   -H "Content-Type: application/json" \
   -d '{
     "key": "agent.default.reply",

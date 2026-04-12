@@ -17,6 +17,7 @@ from app.domain_models.prompt.models import (
 )
 from app.engines.prompt.prompt_engine import PromptEngine
 from app.integrations.database.models.prompt_models import PromptRegistryEntryModel, PromptVersionModel
+from app.integrations.database.repos._sqlalchemy_utils import EntityLookup, require_entity, with_storage_error
 from app.integrations.database.sqlalchemy_database import SQLAlchemyDatabase
 
 
@@ -26,32 +27,16 @@ class SQLAlchemyPromptRegistryRepository:
         self._prompt_engine = prompt_engine
 
     def list_entries(self) -> tuple[PromptRegistryEntry, ...]:
-        try:
-            with self._database.session_scope() as session:
-                rows = session.execute(
-                    select(PromptRegistryEntryModel)
-                    .options(selectinload(PromptRegistryEntryModel.versions))
-                    .order_by(PromptRegistryEntryModel.key.asc())
-                ).scalars().all()
-                return tuple(self._to_domain(row) for row in rows)
-        except SQLAlchemyError as exc:
-            raise StorageUnavailableError("Unable to list prompt registry entries.") from exc
+        return with_storage_error(
+            self._list_entries,
+            message="Unable to list prompt registry entries.",
+        )
 
     def find_by_key(self, key: PromptKey) -> PromptRegistryEntry:
-        try:
-            with self._database.session_scope() as session:
-                row = session.get(
-                    PromptRegistryEntryModel,
-                    key.value,
-                    options=(selectinload(PromptRegistryEntryModel.versions),),
-                )
-                if row is None:
-                    raise PromptRegistryEntryNotFoundError(f"Prompt {key} not found")
-                return self._to_domain(row)
-        except PromptRegistryEntryNotFoundError:
-            raise
-        except SQLAlchemyError as exc:
-            raise StorageUnavailableError("Unable to find prompt registry entry.") from exc
+        return with_storage_error(
+            lambda: self._find_by_key(key),
+            message="Unable to find prompt registry entry.",
+        )
 
     def create_prompt(self, registration: PromptRegistration) -> PromptRegistryEntry:
         try:
@@ -76,60 +61,75 @@ class SQLAlchemyPromptRegistryRepository:
             raise StorageUnavailableError("Unable to create prompt registry entry.") from exc
 
     def create_version(self, registration: PromptVersionRegistration) -> PromptRegistryEntry:
-        try:
-            with self._database.session_scope() as session:
-                row = session.get(
-                    PromptRegistryEntryModel,
-                    registration.key.value,
-                    options=(selectinload(PromptRegistryEntryModel.versions),),
-                )
-                if row is None:
-                    raise PromptRegistryEntryNotFoundError(f"Prompt {registration.key} not found")
-
-                next_version_number = len(row.versions) + 1
-                row.versions.append(
-                    PromptVersionModel(
-                        id=PromptVersionId.new().value,
-                        version_number=next_version_number,
-                        template=registration.template,
-                        description=registration.description,
-                        is_active=False,
-                    )
-                )
-                session.flush()
-                session.refresh(row)
-                return self._to_domain(row)
-        except PromptRegistryEntryNotFoundError:
-            raise
-        except SQLAlchemyError as exc:
-            raise StorageUnavailableError("Unable to create prompt registry version.") from exc
+        return with_storage_error(
+            lambda: self._create_version(registration),
+            message="Unable to create prompt registry version.",
+        )
 
     def activate_version(self, activation: PromptActivation) -> PromptRegistryEntry:
-        try:
-            with self._database.session_scope() as session:
-                row = session.get(
-                    PromptRegistryEntryModel,
-                    activation.key.value,
-                    options=(selectinload(PromptRegistryEntryModel.versions),),
+        return with_storage_error(
+            lambda: self._activate_version(activation),
+            message="Unable to activate prompt registry version.",
+        )
+
+    def _list_entries(self) -> tuple[PromptRegistryEntry, ...]:
+        with self._database.session_scope() as session:
+            rows = session.execute(
+                select(PromptRegistryEntryModel)
+                .options(selectinload(PromptRegistryEntryModel.versions))
+                .order_by(PromptRegistryEntryModel.key.asc())
+            ).scalars().all()
+            return tuple(self._to_domain(row) for row in rows)
+
+    def _find_by_key(self, key: PromptKey) -> PromptRegistryEntry:
+        with self._database.session_scope() as session:
+            row = require_entity(session, self._required_prompt_lookup(key))
+            return self._to_domain(row)
+
+    def _create_version(self, registration: PromptVersionRegistration) -> PromptRegistryEntry:
+        with self._database.session_scope() as session:
+            row = require_entity(session, self._required_prompt_lookup(registration.key))
+
+            next_version_number = len(row.versions) + 1
+            row.versions.append(
+                PromptVersionModel(
+                    id=PromptVersionId.new().value,
+                    version_number=next_version_number,
+                    template=registration.template,
+                    description=registration.description,
+                    is_active=False,
                 )
-                if row is None:
-                    raise PromptRegistryEntryNotFoundError(f"Prompt {activation.key} not found")
+            )
+            session.flush()
+            session.refresh(row)
+            return self._to_domain(row)
 
-                domain_entry = self._to_domain(row)
-                updated_entry = self._prompt_engine.activate_version(domain_entry, activation)
+    def _activate_version(self, activation: PromptActivation) -> PromptRegistryEntry:
+        with self._database.session_scope() as session:
+            row = require_entity(session, self._required_prompt_lookup(activation.key))
 
-                for version_model in row.versions:
-                    version_model.is_active = any(
-                        version.id.value == version_model.id and version.is_active for version in updated_entry.versions
-                    )
+            domain_entry = self._to_domain(row)
+            updated_entry = self._prompt_engine.activate_version(domain_entry, activation)
 
-                session.flush()
-                session.refresh(row)
-                return self._to_domain(row)
-        except PromptRegistryEntryNotFoundError:
-            raise
-        except SQLAlchemyError as exc:
-            raise StorageUnavailableError("Unable to activate prompt registry version.") from exc
+            for version_model in row.versions:
+                version_model.is_active = any(
+                    version.id.value == version_model.id and version.is_active for version in updated_entry.versions
+                )
+
+            session.flush()
+            session.refresh(row)
+            return self._to_domain(row)
+
+    def _required_prompt_lookup(
+        self,
+        key: PromptKey,
+    ) -> EntityLookup[PromptRegistryEntryModel, PromptRegistryEntryNotFoundError]:
+        return EntityLookup(
+            model_type=PromptRegistryEntryModel,
+            entity_id=key.value,
+            options=(selectinload(PromptRegistryEntryModel.versions),),
+            not_found=lambda: PromptRegistryEntryNotFoundError(f"Prompt {key} not found"),
+        )
 
     def _to_domain(self, row: PromptRegistryEntryModel) -> PromptRegistryEntry:
         versions = tuple(

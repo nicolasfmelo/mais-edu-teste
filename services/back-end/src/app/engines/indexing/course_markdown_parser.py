@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from app.domain_models.indexing.models import CatalogCourse
+from app.domain_models.indexing.models import CatalogCourse, CatalogCourseSource
 
 
 class CourseMarkdownParser:
@@ -25,15 +25,17 @@ class CourseMarkdownParser:
         curriculum_items = self._parse_curriculum_items(sections["Grade curricular"], file_path)
 
         return CatalogCourse.from_source(
-            slug=file_path.stem,
-            title=title,
-            level=self._normalize_level(info["nivel"], file_path),
-            modality=self._normalize_modality(info["modalidade"], file_path),
-            duration_text=info["tempo de formacao"],
-            learning_summary=self._join_section(sections["O que voce vai aprender"]),
-            market_application=self._join_section(sections["Onde aplicar no mercado de trabalho"]),
-            curriculum_items=curriculum_items,
-            source_path=file_path.relative_to(dataset_dir),
+            CatalogCourseSource(
+                slug=file_path.stem,
+                title=title,
+                level=self._normalize_level(info["nivel"], file_path),
+                modality=self._normalize_modality(info["modalidade"], file_path),
+                duration_text=info["tempo de formacao"],
+                learning_summary=self._join_section(sections["O que voce vai aprender"]),
+                market_application=self._join_section(sections["Onde aplicar no mercado de trabalho"]),
+                curriculum_items=curriculum_items,
+                source_path=file_path.relative_to(dataset_dir),
+            )
         )
 
     def _parse_title(self, lines: list[str], file_path: Path) -> str:

@@ -18,6 +18,10 @@ class StorageUnavailableError(BackendDomainError):
     """Raised when persistent storage cannot be reached or committed."""
 
 
+class InstitutionProfileUnavailableError(BackendDomainError):
+    """Raised when the institutional profile cannot be loaded."""
+
+
 class LLMProxyConfigurationError(BackendDomainError):
     """Raised when the LLM proxy integration is not configured."""
 

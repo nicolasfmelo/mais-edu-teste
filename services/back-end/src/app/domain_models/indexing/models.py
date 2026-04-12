@@ -41,6 +41,19 @@ class IndexingJob:
 
 
 @dataclass(frozen=True)
+class CatalogCourseSource:
+    slug: str
+    title: str
+    level: str
+    modality: str
+    duration_text: str
+    learning_summary: str
+    market_application: str
+    curriculum_items: tuple[str, ...]
+    source_path: Path
+
+
+@dataclass(frozen=True)
 class CatalogCourse:
     id: UUID
     slug: str
@@ -54,29 +67,18 @@ class CatalogCourse:
     source_path: str
 
     @classmethod
-    def from_source(
-        cls,
-        slug: str,
-        title: str,
-        level: str,
-        modality: str,
-        duration_text: str,
-        learning_summary: str,
-        market_application: str,
-        curriculum_items: tuple[str, ...],
-        source_path: Path,
-    ) -> "CatalogCourse":
+    def from_source(cls, source: CatalogCourseSource) -> "CatalogCourse":
         return cls(
-            id=uuid5(UUID("6ba7b811-9dad-11d1-80b4-00c04fd430c8"), f"mais-a-educ-course:{slug}"),
-            slug=slug,
-            title=title,
-            level=level,
-            modality=modality,
-            duration_text=duration_text,
-            learning_summary=learning_summary,
-            market_application=market_application,
-            curriculum_items=curriculum_items,
-            source_path=source_path.as_posix(),
+            id=uuid5(UUID("6ba7b811-9dad-11d1-80b4-00c04fd430c8"), f"mais-a-educ-course:{source.slug}"),
+            slug=source.slug,
+            title=source.title,
+            level=source.level,
+            modality=source.modality,
+            duration_text=source.duration_text,
+            learning_summary=source.learning_summary,
+            market_application=source.market_application,
+            curriculum_items=source.curriculum_items,
+            source_path=source.source_path.as_posix(),
         )
 
     @property
@@ -102,3 +104,10 @@ class CatalogCourse:
 class CatalogBootstrapResult:
     loaded_courses: int
     upserted_courses: int
+
+
+@dataclass(frozen=True)
+class CatalogKnowledgeBootstrapResult:
+    loaded_courses: int
+    indexed_documents: int
+    generated_chunks: int

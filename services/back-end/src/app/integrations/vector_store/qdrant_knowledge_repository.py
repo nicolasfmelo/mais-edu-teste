@@ -15,7 +15,8 @@ class QdrantKnowledgeRepository:
     def save_chunks(self, chunks: tuple[DocumentChunk, ...]) -> None:
         self._chunks.extend(chunks)
 
-    def search(self, query_embedding: tuple[float, ...], limit: int) -> tuple[RetrievedChunk, ...]:
+    def search(self, query_text: str, query_embedding: tuple[float, ...], limit: int) -> tuple[RetrievedChunk, ...]:
+        del query_text
         del query_embedding
         ranked_chunks = [
             RetrievedChunk(

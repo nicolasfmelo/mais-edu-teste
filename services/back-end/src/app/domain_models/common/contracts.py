@@ -2,7 +2,13 @@ from __future__ import annotations
 
 from typing import Protocol
 
-from app.domain_models.agent.models import CreditStatus, GatewayPromptReply, GatewayPromptRequest
+from app.domain_models.agent.models import (
+    CreditBalance,
+    CreditStatus,
+    GatewayPromptReply,
+    GatewayPromptRequest,
+    InstitutionProfile,
+)
 from app.domain_models.chat.models import ChatSession
 from app.domain_models.common.ids import DocumentId, SessionId
 from app.domain_models.indexing.models import CatalogCourse, DocumentChunk, UniversityRecord
@@ -21,12 +27,13 @@ class SessionRepository(Protocol):
     def get_or_create(self, session_id: SessionId) -> ChatSession: ...
     def save(self, session: ChatSession) -> ChatSession: ...
     def find_by_id(self, session_id: SessionId) -> ChatSession: ...
+    def list_all(self) -> tuple[ChatSession, ...]: ...
 
 
 class KnowledgeRepository(Protocol):
     def save_document(self, document: KnowledgeDocument) -> None: ...
     def save_chunks(self, chunks: tuple[DocumentChunk, ...]) -> None: ...
-    def search(self, query_embedding: tuple[float, ...], limit: int) -> tuple[RetrievedChunk, ...]: ...
+    def search(self, query_text: str, query_embedding: tuple[float, ...], limit: int) -> tuple[RetrievedChunk, ...]: ...
 
 
 class DocumentStore(Protocol):
@@ -35,6 +42,10 @@ class DocumentStore(Protocol):
 
 class EmbeddingClient(Protocol):
     def embed_text(self, text: str) -> tuple[float, ...]: ...
+
+
+class InstitutionProfileSource(Protocol):
+    def load(self) -> InstitutionProfile: ...
 
 
 class CourseCatalogRepository(Protocol):
@@ -52,6 +63,10 @@ class CourseCatalogRepository(Protocol):
 
 class CreditSystemClient(Protocol):
     def verify_credit(self, session_id: SessionId) -> CreditStatus: ...
+
+
+class CreditBalanceClient(Protocol):
+    def get_credit_balance(self, api_key: str) -> CreditBalance: ...
 
 
 class AIGatewayClient(Protocol):

@@ -1,4 +1,4 @@
-from app.domain_models.agent.models import AgentInvocation, GatewayPromptReply, GatewayPromptRequest
+from app.domain_models.agent.models import AgentInvocation, GatewayPromptReply, GatewayPromptRequest, InstitutionProfile
 from app.domain_models.chat.models import ChatMessage, MessageRole
 from app.domain_models.common.ids import DocumentId, MessageId, SessionId
 from app.domain_models.rag.models import RetrievedChunk
@@ -32,7 +32,14 @@ def test_langgraph_course_agent_uses_state_class_and_returns_reply() -> None:
     agent = LangGraphCourseAgent(
         rag_service=StubRagService(),
         ai_gateway_client=gateway_client,
-        prompt_assembly_engine=PromptAssemblyEngine(),
+        prompt_assembly_engine=PromptAssemblyEngine(
+            institution_profile=InstitutionProfile(
+                institution_name="Instituto Horizonte Digital",
+                agent_name="Clara",
+                presentation_example="Oi, eu sou a Clara, assistente virtual do Instituto Horizonte Digital.",
+                briefing_markdown="Perfil institucional resumido.",
+            )
+        ),
     )
 
     reply = agent.generate_reply(

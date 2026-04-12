@@ -3,6 +3,7 @@ from __future__ import annotations
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.bootstrap.container import AppContainer
@@ -16,6 +17,12 @@ from app.domain_models.common.exceptions import (
 )
 
 
+def _resolve_cors_origins(container: object) -> list[str]:
+    settings = getattr(container, "_settings", None)
+    origins = getattr(settings, "cors_allowed_origins", ("http://0.0.0.0:5173", "http://localhost:5173"))
+    return list(origins)
+
+
 def create_application(container: AppContainer | None = None) -> FastAPI:
     app_container = container or AppContainer()
 
@@ -26,6 +33,13 @@ def create_application(container: AppContainer | None = None) -> FastAPI:
         yield
 
     application = FastAPI(title="Mais A Educ Backend", version="0.1.0", lifespan=lifespan)
+    application.add_middleware(
+        CORSMiddleware,
+        allow_origins=_resolve_cors_origins(app_container),
+        allow_credentials=False,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
     application.add_exception_handler(LLMProxyUnauthorizedError, _handle_unauthorized_llm_error)
     application.add_exception_handler(LLMProxyInsufficientCreditError, _handle_credit_llm_error)
     application.add_exception_handler(LLMProxyModelNotAllowedError, _handle_invalid_model_llm_error)

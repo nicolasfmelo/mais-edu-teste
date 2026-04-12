@@ -15,4 +15,8 @@ class RagService:
 
     def retrieve(self, query: RagQuery) -> tuple[RetrievedChunk, ...]:
         query_embedding = self._embedding_client.embed_text(query.question)
-        return self._knowledge_repository.search(query_embedding=query_embedding, limit=query.max_chunks)
+        return self._knowledge_repository.search(
+            query_text=query.question,
+            query_embedding=query_embedding,
+            limit=query.max_chunks,
+        )

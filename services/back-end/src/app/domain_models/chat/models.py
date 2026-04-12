@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from datetime import datetime
 from enum import Enum
 
 from app.domain_models.common.ids import MessageId, SessionId
@@ -17,15 +18,27 @@ class ChatMessage:
     id: MessageId
     role: MessageRole
     content: str
+    created_at: datetime | None = None
 
 
 @dataclass(frozen=True)
 class ChatSession:
     id: SessionId
     messages: tuple[ChatMessage, ...] = field(default_factory=tuple)
+    status: str = "active"
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
+    last_message_at: datetime | None = None
 
     def append(self, message: ChatMessage) -> "ChatSession":
-        return ChatSession(id=self.id, messages=(*self.messages, message))
+        return ChatSession(
+            id=self.id,
+            messages=(*self.messages, message),
+            status=self.status,
+            created_at=self.created_at,
+            updated_at=self.updated_at,
+            last_message_at=self.last_message_at,
+        )
 
 
 @dataclass(frozen=True)

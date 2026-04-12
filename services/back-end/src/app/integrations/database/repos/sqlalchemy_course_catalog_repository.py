@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+import re
+
 from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.sql import or_
 
 from app.domain_models.common.exceptions import StorageUnavailableError
 from app.domain_models.indexing.models import CatalogCourse
@@ -59,7 +62,13 @@ class SQLAlchemyCourseCatalogRepository:
                 if modality is not None:
                     statement = statement.where(CourseCatalogEntryModel.modality == modality)
                 if query:
-                    statement = statement.where(CourseCatalogEntryModel.search_text.ilike(f"%{query}%"))
+                    query_terms = self._tokenize_query(query)
+                    if query_terms:
+                        statement = statement.where(
+                            or_(*(CourseCatalogEntryModel.search_text.ilike(f"%{term}%") for term in query_terms))
+                        )
+                    else:
+                        statement = statement.where(CourseCatalogEntryModel.search_text.ilike(f"%{query}%"))
 
                 rows = session.execute(
                     statement.order_by(CourseCatalogEntryModel.title.asc()).limit(max(1, limit))
@@ -67,6 +76,10 @@ class SQLAlchemyCourseCatalogRepository:
                 return tuple(self._to_domain(row) for row in rows)
         except SQLAlchemyError as exc:
             raise StorageUnavailableError("Unable to search course catalog entries.") from exc
+
+    def _tokenize_query(self, query: str) -> tuple[str, ...]:
+        terms = [term for term in re.findall(r"[a-zA-Z0-9-]+", query.lower()) if len(term) >= 3]
+        return tuple(dict.fromkeys(terms))
 
     def _to_model(self, course: CatalogCourse) -> CourseCatalogEntryModel:
         return CourseCatalogEntryModel(
