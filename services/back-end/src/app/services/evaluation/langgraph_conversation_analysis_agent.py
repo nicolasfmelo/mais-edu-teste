@@ -1,14 +1,13 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from uuid import uuid4
 
 from langgraph.graph import END, START, StateGraph
 
 from app.domain_models.agent.models import GatewayPromptRequest
 from app.domain_models.common.contracts import AIGatewayClient
 from app.domain_models.common.exceptions import ConversationAnalysisError
-from app.domain_models.evaluation.models import SessionEvaluation
+from app.domain_models.evaluation.models import ExportedConversationSession, SessionEvaluation
 from app.engines.evaluation.conversation_analysis_parser_engine import parse_session_evaluation
 from app.engines.evaluation.conversation_analysis_prompt_engine import build_analysis_prompt, parse_analysis_response
 from app.engines.evaluation.prompt_injection_detector_engine import detect_injection
@@ -19,10 +18,10 @@ from app.integrations.object_store.minio_conversation_reader import MinioConvers
 class ConversationAnalysisGraphState:
     api_key: str
     model_id: str | None
-    sessions: list[dict] = field(default_factory=list)
+    sessions: tuple[ExportedConversationSession, ...] = field(default_factory=tuple)
     evaluations: tuple[SessionEvaluation, ...] = field(default_factory=tuple)
 
-    def with_sessions(self, sessions: list[dict]) -> "ConversationAnalysisGraphState":
+    def with_sessions(self, sessions: tuple[ExportedConversationSession, ...]) -> "ConversationAnalysisGraphState":
         return ConversationAnalysisGraphState(
             api_key=self.api_key,
             model_id=self.model_id,
@@ -83,14 +82,17 @@ class LangGraphConversationAnalysisAgent:
         evaluations = tuple(self._analyze_one(session, state.api_key, state.model_id) for session in state.sessions)
         return state.with_evaluations(evaluations).to_payload()
 
-    def _analyze_one(self, session: dict, api_key: str, model_id: str | None) -> SessionEvaluation:
-        session_id = session.get("id", str(uuid4()))
-        messages = session.get("messages", [])
-        heuristic_detected, heuristic_snippets = detect_injection(messages)
+    def _analyze_one(
+        self,
+        session: ExportedConversationSession,
+        api_key: str,
+        model_id: str | None,
+    ) -> SessionEvaluation:
+        heuristic_detected, heuristic_snippets = detect_injection(session.messages)
         prompt = build_analysis_prompt(session)
         request = GatewayPromptRequest(
             api_key=api_key,
-            idempotency_key=f"analysis-{session_id}",
+            idempotency_key=f"analysis-{session.session_id}",
             prompt=prompt,
             model_id=model_id,
         )
@@ -98,7 +100,7 @@ class LangGraphConversationAnalysisAgent:
             reply = self._ai_gateway_client.generate_reply(request)
             parsed = parse_analysis_response(reply.content)
             return parse_session_evaluation(
-                session_id_str=session_id,
+                session_id=session.session_id,
                 parsed=parsed,
                 prompt_tokens=reply.prompt_tokens,
                 completion_tokens=reply.completion_tokens,
@@ -106,4 +108,4 @@ class LangGraphConversationAnalysisAgent:
                 heuristic_injection_snippets=heuristic_snippets,
             )
         except Exception as exc:
-            raise ConversationAnalysisError(f"Analysis failed for session '{session_id}': {exc}") from exc
+            raise ConversationAnalysisError(f"Analysis failed for session '{session.session_id}': {exc}") from exc

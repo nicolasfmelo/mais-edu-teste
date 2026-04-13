@@ -4,7 +4,7 @@ from app.domain_models.chat.models import ChatSession
 from app.domain_models.common.contracts import AgentEvaluationRepository, SessionRepository
 from app.domain_models.common.exceptions import EvaluationNotFoundError
 from app.domain_models.common.ids import SessionId
-from app.domain_models.evaluation.models import EvaluationsSummary, SessionEvaluation
+from app.domain_models.evaluation.models import EvaluationsSummary, ExportedConversationSession, SessionEvaluation
 from app.engines.evaluation.conversation_analysis_prompt_engine import build_analysis_prompt
 from app.engines.evaluation.evaluations_summary_engine import EvaluationsSummaryEngine
 from app.engines.evaluation.session_evaluation_engine import SessionEvaluationEngine
@@ -48,14 +48,7 @@ class EvaluationService:
         if evaluation is None:
             raise EvaluationNotFoundError(f"Agent evaluation not found for session {session_id.value}")
         chat_session = self._session_repository.find_by_id(session_id)
-        session_dict = {
-            "id": str(session_id.value),
-            "messages": [
-                {"role": str(msg.role.value if hasattr(msg.role, "value") else msg.role), "content": msg.content}
-                for msg in chat_session.messages
-            ],
-        }
-        prompt_used = build_analysis_prompt(session_dict)
+        prompt_used = build_analysis_prompt(ExportedConversationSession.from_chat_session(chat_session))
         return evaluation, chat_session, prompt_used
 
     def _evaluate(self, session: ChatSession) -> SessionEvaluation:

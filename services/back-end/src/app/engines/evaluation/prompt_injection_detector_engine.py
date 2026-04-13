@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import re
 
+from app.domain_models.evaluation.models import ExportedConversationMessage
+
 _INJECTION_PATTERNS: list[re.Pattern[str]] = [
     # Instruction override
     re.compile(r"ignore\s+(previous|all|your|the)\s+instructions?", re.IGNORECASE),
@@ -34,16 +36,16 @@ _INJECTION_PATTERNS: list[re.Pattern[str]] = [
 _SNIPPET_MAX_LEN = 120
 
 
-def detect_injection(messages: list[dict]) -> tuple[bool, list[str]]:
+def detect_injection(messages: tuple[ExportedConversationMessage, ...]) -> tuple[bool, list[str]]:
     """Scans user messages for prompt injection patterns.
 
     Returns (detected, snippets) where snippets are the matching message excerpts.
     """
     snippets: list[str] = []
     for msg in messages:
-        if str(msg.get("role", "")).lower() != "user":
+        if msg.role.lower() != "user":
             continue
-        content = str(msg.get("content", ""))
+        content = msg.content
         for pattern in _INJECTION_PATTERNS:
             if pattern.search(content):
                 snippet = content[:_SNIPPET_MAX_LEN]

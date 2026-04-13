@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from enum import Enum
 
+from app.domain_models.chat.models import ChatSession
 from app.domain_models.common.ids import SessionId
 
 
@@ -34,6 +35,42 @@ class TokenUsage:
 @dataclass(frozen=True)
 class EvaluationEvidence:
     snippet: str
+
+
+@dataclass(frozen=True)
+class ExportedConversationMessage:
+    role: str
+    content: str
+
+
+@dataclass(frozen=True)
+class ExportedConversationSession:
+    session_id: SessionId
+    messages: tuple[ExportedConversationMessage, ...] = field(default_factory=tuple)
+
+    @classmethod
+    def from_chat_session(cls, session: ChatSession) -> "ExportedConversationSession":
+        return cls(
+            session_id=session.id,
+            messages=tuple(
+                ExportedConversationMessage(role=message.role.value, content=message.content)
+                for message in session.messages
+            ),
+        )
+
+
+@dataclass(frozen=True)
+class ParsedAnalysisResponse:
+    objetivo_cliente: str
+    satisfaction: SatisfactionClass
+    effort_score: int
+    understanding_score: int
+    resolution_score: int
+    behavior_change: BehaviorChange
+    closing_signal: ClosingSignal
+    evidences: tuple[EvaluationEvidence, ...] = field(default_factory=tuple)
+    injection_attempt: bool = False
+    injection_evidence: str | None = None
 
 
 @dataclass(frozen=True)
