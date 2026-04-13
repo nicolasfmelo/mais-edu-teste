@@ -230,6 +230,19 @@ function AgentPromptPanel({ config }: { config: AgentPromptConfig }) {
     entry?.versions[entry.versions.length - 1] ??
     null
 
+  useEffect(() => {
+    if (!composerOpen) return
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setComposerOpen(false)
+      }
+    }
+
+    window.addEventListener('keydown', handleEscape)
+    return () => window.removeEventListener('keydown', handleEscape)
+  }, [composerOpen])
+
   const openCreatePrompt = () => {
     clearSuccess()
     setComposerState(emptyComposerState)
@@ -438,17 +451,22 @@ function AgentPromptPanel({ config }: { config: AgentPromptConfig }) {
 
             <div className="flex-1 p-5">
               {errorMessage ? (
-                <Banner tone="error" icon={CircleAlert} message={errorMessage} />
+                <Banner tone="error" icon={CircleAlert} message={errorMessage} onClose={() => void load({ silent: true })} closeLabel="Tentar de novo" />
               ) : null}
               {successMessage ? (
-                <Banner tone="success" icon={Sparkles} message={successMessage} />
+                <Banner tone="success" icon={Sparkles} message={successMessage} onClose={clearSuccess} closeLabel="Dispensar" />
               ) : null}
 
               {isLoading ? (
                 <div className="flex h-full min-h-[280px] items-center justify-center rounded-[24px] border border-dashed border-black/10 bg-[#fafbfb]">
-                  <div className="flex items-center gap-3 text-sm text-[#667781]">
-                    <RefreshCw className="size-4 animate-spin" />
-                    Carregando configuracao do agente...
+                  <div className="rounded-[24px] border border-black/8 bg-white px-6 py-5 shadow-[0_12px_30px_rgba(17,27,33,0.04)]">
+                    <div className="flex items-center gap-3 text-sm font-medium text-[#3b4a54]">
+                      <RefreshCw className={`size-4 animate-spin ${config.accentClass}`} />
+                      Carregando configuracao do agente...
+                    </div>
+                    <p className="mt-2 text-sm text-[#667781]">
+                      Buscando linha base, versoes publicadas e runtime atual de {config.shortLabel}.
+                    </p>
                   </div>
                 </div>
               ) : selectedVersion ? (
@@ -519,17 +537,23 @@ function AgentPromptPanel({ config }: { config: AgentPromptConfig }) {
                   </div>
                 </div>
               ) : (
-                <div className="flex h-full min-h-[280px] items-center justify-center rounded-[24px] border border-dashed border-black/10 bg-[#fafbfb] p-8 text-center">
-                  <div className="max-w-md">
-                    <p className="text-base font-semibold text-[#111b21]">Linha base ainda nao configurada</p>
+                <div className="flex h-full min-h-[280px] items-center justify-center rounded-[24px] border border-dashed border-black/10 bg-[#fafbfb] p-8">
+                  <div className="max-w-xl rounded-[28px] border border-black/8 bg-white px-8 py-7 text-center shadow-[0_14px_34px_rgba(17,27,33,0.04)]">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#667781]">
+                      Prompt registry
+                    </p>
+                    <p className="mt-3 text-xl font-semibold text-[#111b21]">Linha base ainda nao configurada</p>
                     <p className="mt-2 text-sm leading-6 text-[#667781]">
                       Este agente precisa de um prompt inicial para ativar o fluxo de versionamento. O baseline
                       default sera semeado no startup; se ele nao aparecer aqui, a criacao manual continua disponivel.
                     </p>
+                    <div className={`mx-auto mt-4 inline-flex rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] ${config.accentSoftClass}`}>
+                      {config.promptKey}
+                    </div>
                     <Button
                       type="button"
                       onClick={openCreatePrompt}
-                      className="mt-4 rounded-full bg-[#111b21] px-4 text-white hover:bg-[#1f2c33]"
+                      className={`mt-5 rounded-full px-4 text-white ${config.accentSolidClass} hover:opacity-90`}
                     >
                       Criar prompt base
                     </Button>
@@ -593,10 +617,14 @@ function Banner({
   tone,
   icon: Icon,
   message,
+  onClose,
+  closeLabel,
 }: {
   tone: 'error' | 'success'
   icon: typeof CircleAlert
   message: string
+  onClose: () => void
+  closeLabel: string
 }) {
   const style =
     tone === 'error'
@@ -604,9 +632,18 @@ function Banner({
       : 'border-[#bde5d8] bg-[#f1fff8] text-[#0b5c4b]'
 
   return (
-    <div className={`mb-4 flex items-start gap-3 rounded-2xl border px-4 py-3 text-sm ${style}`}>
-      <Icon className="mt-0.5 size-4 shrink-0" />
-      <span>{message}</span>
+    <div className={`mb-4 flex items-start justify-between gap-4 rounded-2xl border px-4 py-3 text-sm ${style}`}>
+      <div className="flex items-start gap-3">
+        <Icon className="mt-0.5 size-4 shrink-0" />
+        <span>{message}</span>
+      </div>
+      <button
+        type="button"
+        onClick={onClose}
+        className="shrink-0 rounded-full border border-current/15 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] opacity-80 transition hover:opacity-100"
+      >
+        {closeLabel}
+      </button>
     </div>
   )
 }
