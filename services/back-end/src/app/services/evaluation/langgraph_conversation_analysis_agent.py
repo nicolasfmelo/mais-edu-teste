@@ -5,13 +5,13 @@ from dataclasses import dataclass, field
 from langgraph.graph import END, START, StateGraph
 
 from app.domain_models.agent.models import GatewayPromptRequest
-from app.domain_models.common.contracts import AIGatewayClient
+from app.domain_models.common.contracts import AIGatewayClient, ConversationSessionSource
 from app.domain_models.common.exceptions import ConversationAnalysisError
 from app.domain_models.evaluation.models import ExportedConversationSession, SessionEvaluation
 from app.engines.evaluation.conversation_analysis_parser_engine import parse_session_evaluation
 from app.engines.evaluation.conversation_analysis_prompt_engine import build_analysis_prompt, parse_analysis_response
 from app.engines.evaluation.prompt_injection_detector_engine import detect_injection
-from app.integrations.object_store.minio_conversation_reader import MinioConversationReader
+from app.integrations.langgraph.state_payload_adapter import LangGraphStatePayloadAdapter
 
 
 @dataclass(frozen=True)
@@ -37,50 +37,41 @@ class ConversationAnalysisGraphState:
             evaluations=evaluations,
         )
 
-    def to_payload(self) -> dict[str, object]:
-        return {"state": self}
-
-    @classmethod
-    def from_payload(cls, payload: dict[str, object]) -> "ConversationAnalysisGraphState":
-        state = payload["state"]
-        if not isinstance(state, cls):
-            raise TypeError("Unexpected conversation analysis graph state payload.")
-        return state
-
-
 class LangGraphConversationAnalysisAgent:
     def __init__(
         self,
-        conversation_reader: MinioConversationReader,
+        conversation_reader: ConversationSessionSource,
         ai_gateway_client: AIGatewayClient,
     ) -> None:
         self._conversation_reader = conversation_reader
         self._ai_gateway_client = ai_gateway_client
+        self._payload_adapter = LangGraphStatePayloadAdapter(
+            ConversationAnalysisGraphState,
+            "conversation analysis graph state",
+        )
         self._graph = self._build_graph()
 
     def analyze(self, api_key: str, model_id: str | None = None) -> tuple[SessionEvaluation, ...]:
         initial = ConversationAnalysisGraphState(api_key=api_key, model_id=model_id)
-        final_payload = self._graph.invoke(initial.to_payload())
-        return ConversationAnalysisGraphState.from_payload(final_payload).evaluations
+        final_payload = self._graph.invoke(self._payload_adapter.to_payload(initial))
+        return self._payload_adapter.from_payload(final_payload).evaluations
 
     def _build_graph(self):
         graph = StateGraph(dict)
-        graph.add_node("load_sessions", self._load_sessions)
-        graph.add_node("analyze_sessions", self._analyze_sessions)
+        graph.add_node("load_sessions", self._payload_adapter.wrap_node(self._load_sessions))
+        graph.add_node("analyze_sessions", self._payload_adapter.wrap_node(self._analyze_sessions))
         graph.add_edge(START, "load_sessions")
         graph.add_edge("load_sessions", "analyze_sessions")
         graph.add_edge("analyze_sessions", END)
         return graph.compile()
 
-    def _load_sessions(self, payload: dict[str, object]) -> dict[str, object]:
-        state = ConversationAnalysisGraphState.from_payload(payload)
+    def _load_sessions(self, state: ConversationAnalysisGraphState) -> ConversationAnalysisGraphState:
         sessions = self._conversation_reader.list_sessions()
-        return state.with_sessions(sessions).to_payload()
+        return state.with_sessions(sessions)
 
-    def _analyze_sessions(self, payload: dict[str, object]) -> dict[str, object]:
-        state = ConversationAnalysisGraphState.from_payload(payload)
+    def _analyze_sessions(self, state: ConversationAnalysisGraphState) -> ConversationAnalysisGraphState:
         evaluations = tuple(self._analyze_one(session, state.api_key, state.model_id) for session in state.sessions)
-        return state.with_evaluations(evaluations).to_payload()
+        return state.with_evaluations(evaluations)
 
     def _analyze_one(
         self,

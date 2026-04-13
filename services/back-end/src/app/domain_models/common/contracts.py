@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Protocol
 
-from app.domain_models.evaluation.models import SessionEvaluation
+from app.domain_models.evaluation.models import ExportedConversationSession, SessionEvaluation
 from app.domain_models.metrics.job_models import MetricsJob, MetricsJobStatus, MetricsJobType
 from app.domain_models.agent.models import (
     CreditBalance,
@@ -65,6 +65,10 @@ class CourseCatalogRepository(Protocol):
 
 class CourseCatalogDocumentSource(Protocol):
     def list_documents(self) -> tuple[CatalogCourseDocument, ...]: ...
+
+
+class ConversationSessionSource(Protocol):
+    def list_sessions(self) -> tuple[ExportedConversationSession, ...]: ...
 
 
 class CreditSystemClient(Protocol):
