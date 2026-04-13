@@ -1,0 +1,17 @@
+.git
+.gitignore
+**/.DS_Store
+**/__pycache__
+**/.pytest_cache
+**/.mypy_cache
+**/.ruff_cache
+**/.venv
+**/node_modules
+**/dist
+**/build
+**/.idea
+**/.vscode
+**/*.pyc
+**/*.pyo
+**/*.pyd
+**/.env.local

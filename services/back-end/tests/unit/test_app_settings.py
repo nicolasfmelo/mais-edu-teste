@@ -55,3 +55,16 @@ def test_from_env_requires_minio_secret_key() -> None:
 
         with pytest.raises(AssertionError, match="MINIO_SECRET_KEY must be set"):
             AppSettings.from_env()
+
+
+def test_from_env_accepts_legacy_minio_bucket_name() -> None:
+    with pytest.MonkeyPatch.context() as monkeypatch:
+        monkeypatch.setenv("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/mais_a_educ")
+        monkeypatch.setenv("MINIO_ACCESS_KEY", "test-key")
+        monkeypatch.setenv("MINIO_SECRET_KEY", "test-secret")
+        monkeypatch.setenv("MINIO_BUCKET_NAME", "mais-a-educ")
+        monkeypatch.delenv("MINIO_EXPORT_BUCKET", raising=False)
+
+        settings = AppSettings.from_env()
+
+    assert settings.minio_export_bucket == "mais-a-educ"

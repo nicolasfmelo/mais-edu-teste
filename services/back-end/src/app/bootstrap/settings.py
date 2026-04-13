@@ -103,5 +103,8 @@ class AppSettings:
             minio_endpoint=_strip_url_scheme(os.getenv("MINIO_ENDPOINT", "localhost:9000")),
             minio_access_key=minio_access_key,
             minio_secret_key=minio_secret_key,
-            minio_export_bucket=os.getenv("MINIO_EXPORT_BUCKET", "conversations"),
+            minio_export_bucket=os.getenv(
+                "MINIO_EXPORT_BUCKET",
+                os.getenv("MINIO_BUCKET_NAME", "conversations"),
+            ),
         )
