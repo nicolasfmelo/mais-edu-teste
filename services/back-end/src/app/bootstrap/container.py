@@ -119,7 +119,6 @@ class AppContainer:
         self._course_markdown_parser = CourseMarkdownParser()
         self._prompt_registry_repository = SQLAlchemyPromptRegistryRepository(
             database=self._database,
-            prompt_engine=self._prompt_engine,
         )
         self._course_catalog_repository = SQLAlchemyCourseCatalogRepository(self._database)
 

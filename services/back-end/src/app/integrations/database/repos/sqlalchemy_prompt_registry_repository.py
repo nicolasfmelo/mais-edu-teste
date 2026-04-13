@@ -7,7 +7,6 @@ from sqlalchemy.orm import selectinload
 from app.domain_models.common.exceptions import StorageUnavailableError
 from app.domain_models.prompt.exceptions import PromptAlreadyExistsError, PromptRegistryEntryNotFoundError
 from app.domain_models.prompt.models import (
-    PromptActivation,
     PromptKey,
     PromptRegistration,
     PromptRegistryEntry,
@@ -15,16 +14,14 @@ from app.domain_models.prompt.models import (
     PromptVersionId,
     PromptVersionRegistration,
 )
-from app.engines.prompt.prompt_engine import PromptEngine
 from app.integrations.database.models.prompt_models import PromptRegistryEntryModel, PromptVersionModel
 from app.integrations.database.repos._sqlalchemy_utils import EntityLookup, require_entity, with_storage_error
 from app.integrations.database.sqlalchemy_database import SQLAlchemyDatabase
 
 
 class SQLAlchemyPromptRegistryRepository:
-    def __init__(self, database: SQLAlchemyDatabase, prompt_engine: PromptEngine) -> None:
+    def __init__(self, database: SQLAlchemyDatabase) -> None:
         self._database = database
-        self._prompt_engine = prompt_engine
 
     def list_entries(self) -> tuple[PromptRegistryEntry, ...]:
         return with_storage_error(
@@ -66,9 +63,9 @@ class SQLAlchemyPromptRegistryRepository:
             message="Unable to create prompt registry version.",
         )
 
-    def activate_version(self, activation: PromptActivation) -> PromptRegistryEntry:
+    def activate_version(self, entry: PromptRegistryEntry) -> PromptRegistryEntry:
         return with_storage_error(
-            lambda: self._activate_version(activation),
+            lambda: self._activate_version(entry),
             message="Unable to activate prompt registry version.",
         )
 
@@ -104,16 +101,13 @@ class SQLAlchemyPromptRegistryRepository:
             session.refresh(row)
             return self._to_domain(row)
 
-    def _activate_version(self, activation: PromptActivation) -> PromptRegistryEntry:
+    def _activate_version(self, entry: PromptRegistryEntry) -> PromptRegistryEntry:
         with self._database.session_scope() as session:
-            row = require_entity(session, self._required_prompt_lookup(activation.key))
-
-            domain_entry = self._to_domain(row)
-            updated_entry = self._prompt_engine.activate_version(domain_entry, activation)
+            row = require_entity(session, self._required_prompt_lookup(entry.key))
 
             for version_model in row.versions:
                 version_model.is_active = any(
-                    version.id.value == version_model.id and version.is_active for version in updated_entry.versions
+                    version.id.value == version_model.id and version.is_active for version in entry.versions
                 )
 
             session.flush()

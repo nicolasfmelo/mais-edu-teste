@@ -10,7 +10,7 @@ def test_prompt_registry_service_registers_versions_and_activates_selected_one(t
     database = SQLAlchemyDatabase(f"sqlite+pysqlite:///{tmp_path / 'service_prompt.db'}")
     database.create_schema()
     engine = PromptEngine()
-    repository = SQLAlchemyPromptRegistryRepository(database=database, prompt_engine=engine)
+    repository = SQLAlchemyPromptRegistryRepository(database=database)
     service = PromptRegistryService(prompt_registry_repository=repository, prompt_engine=engine)
 
     created = service.register_prompt("sales-qualification", "template v1", "initial version")

@@ -54,4 +54,6 @@ class PromptRegistryService:
             key=self._prompt_engine.normalize_key(raw_key),
             version_id=PromptVersionId(value=UUID(raw_version_id)),
         )
-        return self._prompt_registry_repository.activate_version(activation)
+        entry = self._prompt_registry_repository.find_by_key(activation.key)
+        activated_entry = self._prompt_engine.activate_version(entry, activation)
+        return self._prompt_registry_repository.activate_version(activated_entry)
