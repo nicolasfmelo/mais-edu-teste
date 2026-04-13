@@ -26,6 +26,10 @@ type AgentPromptConfig = {
   shortLabel: string
   promptKey: string
   accentClass: string
+  accentSolidClass: string
+  accentSoftClass: string
+  accentBorderClass: string
+  accentMutedClass: string
   surfaceClass: string
   borderClass: string
   icon: typeof Bot
@@ -50,6 +54,10 @@ const agentConfigs: AgentPromptConfig[] = [
     shortLabel: 'Chat',
     promptKey: 'chat-agent-system',
     accentClass: 'text-[#0b5c4b]',
+    accentSolidClass: 'bg-[#00a884]',
+    accentSoftClass: 'bg-[#d9fdd3] text-[#0b5c4b]',
+    accentBorderClass: 'border-[#00a884]/45',
+    accentMutedClass: 'bg-[#eef7f4] text-[#32525a]',
     surfaceClass: 'bg-[linear-gradient(135deg,#d9fdd3_0%,#f7ffed_100%)]',
     borderClass: 'border-[#00a884]/30',
     icon: Bot,
@@ -62,6 +70,10 @@ const agentConfigs: AgentPromptConfig[] = [
     shortLabel: 'NPS',
     promptKey: 'nps-agent-system',
     accentClass: 'text-[#8a5a00]',
+    accentSolidClass: 'bg-[#d89b1d]',
+    accentSoftClass: 'bg-[#fff1cc] text-[#8a5a00]',
+    accentBorderClass: 'border-[#d89b1d]/45',
+    accentMutedClass: 'bg-[#fff7e5] text-[#8a5a00]',
     surfaceClass: 'bg-[linear-gradient(135deg,#fff5d8_0%,#fffaf0_100%)]',
     borderClass: 'border-[#f0b429]/40',
     icon: ShieldCheck,
@@ -332,9 +344,9 @@ function AgentPromptPanel({ config }: { config: AgentPromptConfig }) {
                       <div
                         className={`absolute left-0 top-5 size-3 rounded-full border-2 ${
                           isSelected
-                            ? 'border-[#00a884] bg-[#00a884]'
+                            ? `${config.accentBorderClass.replace('/45', '')} ${config.accentSolidClass}`
                             : version.is_active
-                              ? 'border-[#00a884] bg-[#d9fdd3]'
+                              ? `${config.accentBorderClass.replace('/45', '')} ${config.accentSoftClass.split(' ')[0]}`
                               : 'border-[#c3cfcc] bg-white'
                         }`}
                       />
@@ -343,7 +355,7 @@ function AgentPromptPanel({ config }: { config: AgentPromptConfig }) {
                         onClick={() => setSelectedVersionId(version.id)}
                         className={`w-full rounded-[22px] border px-4 py-3 text-left transition ${
                           isSelected
-                            ? 'border-[#00a884]/45 bg-white shadow-[0_10px_24px_rgba(17,27,33,0.06)]'
+                            ? `${config.accentBorderClass} bg-white shadow-[0_10px_24px_rgba(17,27,33,0.06)]`
                             : 'border-black/5 bg-white/75 hover:border-black/10 hover:bg-white'
                         }`}
                       >
@@ -359,12 +371,12 @@ function AgentPromptPanel({ config }: { config: AgentPromptConfig }) {
                           </div>
                           <div className="flex shrink-0 flex-col items-end gap-1">
                             {version.is_active ? (
-                              <span className="rounded-full bg-[#d9fdd3] px-2 py-0.5 text-[11px] font-semibold text-[#0b5c4b]">
+                              <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${config.accentSoftClass}`}>
                                 ativa
                               </span>
                             ) : null}
                             {isSelected ? (
-                              <span className="rounded-full bg-[#eef7f4] px-2 py-0.5 text-[11px] font-semibold text-[#32525a]">
+                              <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${config.accentMutedClass}`}>
                                 selecionada
                               </span>
                             ) : null}
@@ -405,7 +417,7 @@ function AgentPromptPanel({ config }: { config: AgentPromptConfig }) {
                   <p className="mt-2 text-sm text-[#667781]">{formatUpdatedAt(activeVersion)}</p>
                 </div>
 
-                <div className="rounded-[24px] border border-black/8 bg-[#f4f7f6] px-4 py-4">
+                <div className={`rounded-[24px] border px-4 py-4 ${config.borderClass} ${config.surfaceClass}`}>
                   <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#667781]">
                     Estado operacional
                   </p>
@@ -449,7 +461,7 @@ function AgentPromptPanel({ config }: { config: AgentPromptConfig }) {
                       V{selectedVersion.version_number}
                     </span>
                     {selectedVersion.is_active ? (
-                      <span className="rounded-full bg-[#d9fdd3] px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-[#0b5c4b]">
+                      <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] ${config.accentSoftClass}`}>
                         ativa no runtime
                       </span>
                     ) : null}
@@ -480,7 +492,7 @@ function AgentPromptPanel({ config }: { config: AgentPromptConfig }) {
                               void handleActivate(selectedVersion)
                             }}
                             disabled={isActivatingId === selectedVersion.id}
-                            className="rounded-full bg-[#00a884] px-4 text-white hover:bg-[#009977]"
+                            className={`rounded-full px-4 text-white ${config.accentSolidClass} hover:opacity-90`}
                           >
                             <Workflow className="size-4" />
                             {isActivatingId === selectedVersion.id ? 'Ativando...' : 'Ativar versao'}
@@ -554,7 +566,7 @@ function AgentPromptPanel({ config }: { config: AgentPromptConfig }) {
               }
               openCreateVersion(selectedVersion ?? activeVersion)
             }}
-            className="mt-4 w-full rounded-full bg-[#111b21] px-4 text-white hover:bg-[#1f2c33]"
+            className={`mt-4 w-full rounded-full px-4 text-white ${config.accentSolidClass} hover:opacity-90`}
           >
             {entry ? 'Abrir editor de versao' : 'Criar prompt base'}
           </Button>
@@ -654,13 +666,13 @@ function ComposerOverlay({
 
         <div className="flex-1 overflow-auto px-6 py-5">
           {state.mode === 'version' && state.sourceVersionNumber ? (
-            <div className="rounded-2xl border border-[#00a884]/20 bg-[#f6fffb] px-4 py-3 text-sm text-[#0b5c4b]">
+            <div className={`rounded-2xl border px-4 py-3 text-sm ${config.accentBorderClass} ${config.accentSoftClass}`}>
               Nova versao baseada na V{state.sourceVersionNumber}. A versao anterior continua preservada.
             </div>
           ) : null}
 
           <div className="mt-5 grid gap-5 lg:grid-cols-[280px_minmax(0,1fr)]">
-            <div className="rounded-[24px] border border-black/8 bg-[#f7f8fa] p-4">
+              <div className={`rounded-[24px] border p-4 ${config.borderClass} ${config.surfaceClass}`}>
               <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#667781]">Modo do editor</p>
               <div className="mt-4 space-y-3 text-sm leading-6 text-[#3b4a54]">
                 <p>
@@ -681,7 +693,7 @@ function ComposerOverlay({
                   value={state.description}
                   onChange={(event) => onChange({ ...state, description: event.target.value })}
                   placeholder="Ex: reforca discovery antes de recomendar inscricao"
-                  className="h-12 w-full rounded-2xl border border-black/10 bg-[#f7f8fa] px-4 text-sm text-[#111b21] outline-none transition focus:border-[#00a884] focus:bg-white"
+                  className={`h-12 w-full rounded-2xl border border-black/10 bg-[#f7f8fa] px-4 text-sm text-[#111b21] outline-none transition focus:bg-white ${config.accentBorderClass}`}
                 />
               </label>
 
@@ -693,7 +705,7 @@ function ComposerOverlay({
                   value={state.template}
                   onChange={(event) => onChange({ ...state, template: event.target.value })}
                   placeholder="Escreva o prompt completo desta versao."
-                  className="min-h-[420px] w-full rounded-[24px] border border-black/10 bg-[#111b21] px-4 py-4 font-mono text-[13px] leading-6 text-[#ecf4f7] outline-none transition focus:border-[#00a884]"
+                  className={`min-h-[420px] w-full rounded-[24px] border border-black/10 bg-[#111b21] px-4 py-4 font-mono text-[13px] leading-6 text-[#ecf4f7] outline-none transition ${config.accentBorderClass}`}
                 />
               </label>
             </div>
@@ -708,7 +720,7 @@ function ComposerOverlay({
             type="button"
             onClick={onSubmit}
             disabled={isSubmitting || !state.description.trim() || !state.template.trim()}
-            className="rounded-full bg-[#111b21] px-4 text-white hover:bg-[#1f2c33]"
+            className={`rounded-full px-4 text-white ${config.accentSolidClass} hover:opacity-90`}
           >
             {isSubmitting ? 'Salvando...' : state.mode === 'create' ? 'Criar prompt' : 'Salvar nova versao'}
           </Button>
