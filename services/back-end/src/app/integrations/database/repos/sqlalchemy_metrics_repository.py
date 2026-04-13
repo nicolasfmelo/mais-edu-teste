@@ -23,6 +23,8 @@ class SQLAlchemyMetricsRepository:
                         messages_count=metrics.messages_count,
                         rag_hits=metrics.rag_hits,
                         used_credit_check=metrics.used_credit_check,
+                        tokens_used=metrics.tokens_used,
+                        model_id=metrics.model_id,
                     )
                 )
         except SQLAlchemyError as exc:
@@ -40,6 +42,9 @@ class SQLAlchemyMetricsRepository:
                         messages_count=row.messages_count,
                         rag_hits=row.rag_hits,
                         used_credit_check=row.used_credit_check,
+                        tokens_used=row.tokens_used or 0,
+                        model_id=row.model_id,
+                        created_at=row.created_at,
                     )
                     for row in rows
                 )

@@ -72,6 +72,22 @@ export type AgentSessionDetail = {
   prompt_used: string
 }
 
+export type TokenEntry = {
+  date: string
+  tokens: number
+}
+
+export type ModelTokenEntry = {
+  model_id: string
+  tokens: number
+}
+
+export type TokensReport = {
+  total_tokens: number
+  time_series: TokenEntry[]
+  by_model: ModelTokenEntry[]
+}
+
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const response = await fetch(`${apiBaseUrl}${path}`, options)
   if (!response.ok) throw new Error('Não foi possível carregar os dados.')
@@ -87,6 +103,10 @@ async function requestOrNull<T>(path: string): Promise<T | null> {
 
 export function getMetricsSummary() {
   return request<MetricsSummary>('/api/metrics/summary')
+}
+
+export function getTokensReport() {
+  return request<TokensReport>('/api/metrics/tokens-report')
 }
 
 export function getEvaluationsSummary() {
@@ -105,16 +125,6 @@ export function exportConversations() {
   return request<{ session_count: number; object_key: string }>('/api/conversations/export', {
     method: 'POST',
   })
-}
-
-export async function getCreditBalance(
-  apiKey: string,
-): Promise<{ available: number; checked_at: string }> {
-  const response = await fetch(`${apiBaseUrl}/api/credits/balance`, {
-    headers: { 'x-api-key': apiKey },
-  })
-  if (!response.ok) throw new Error('Não foi possível carregar o saldo de créditos.')
-  return (await response.json()) as { available: number; checked_at: string }
 }
 
 export function runAgentAnalysis(apiKey: string, modelId?: string) {

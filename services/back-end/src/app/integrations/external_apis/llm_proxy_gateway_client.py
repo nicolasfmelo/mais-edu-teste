@@ -72,9 +72,10 @@ class LLMProxyGatewayClient:
     def _parse_gateway_reply(self, payload: dict[str, object]) -> GatewayPromptReply:
         model_id = payload.get("model_id")
         provider_latency_ms = payload.get("provider_latency_ms")
-        usage = payload.get("usage") or {}
-        prompt_tokens = usage.get("prompt_tokens") if isinstance(usage, dict) else None
-        completion_tokens = usage.get("completion_tokens") if isinstance(usage, dict) else None
+        response = payload.get("response") or {}
+        usage = response.get("usage") if isinstance(response, dict) else None
+        prompt_tokens = usage.get("inputTokens") if isinstance(usage, dict) else None
+        completion_tokens = usage.get("outputTokens") if isinstance(usage, dict) else None
         return GatewayPromptReply(
             content=self._extract_text(payload),
             model_id=model_id if isinstance(model_id, str) else None,

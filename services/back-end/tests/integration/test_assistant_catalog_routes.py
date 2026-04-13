@@ -36,9 +36,7 @@ def test_assistant_catalog_routes_expose_models_and_current_credit_balance(tmp_p
 
         credits = client.get(
             "/api/credits/balance",
-            headers={
-                "x-api-key": "key_test",
-            },
+            headers={"x-api-key": "key_test"},
         )
         assert credits.status_code == 200, credits.text
         assert credits.json() == {

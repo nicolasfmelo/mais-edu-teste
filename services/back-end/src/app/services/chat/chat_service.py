@@ -46,6 +46,8 @@ class ChatService:
                 messages_count=len(persisted_session.messages),
                 rag_hits=len(agent_reply.retrieved_chunks),
                 used_credit_check=len(persisted_session.messages) <= 2,
+                tokens_used=(agent_reply.prompt_tokens or 0) + (agent_reply.completion_tokens or 0),
+                model_id=agent_reply.model_id,
             )
         )
 

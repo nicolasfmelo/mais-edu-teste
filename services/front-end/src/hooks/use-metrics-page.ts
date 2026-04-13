@@ -3,17 +3,18 @@ import {
   exportConversations,
   getAgentSessionDetail,
   getAgentSessions,
-  getCreditBalance,
   getEvaluationsSummary,
   getLatestAnalysisJob,
   getLatestExportJob,
   getMetricsSummary,
+  getTokensReport,
   runAgentAnalysis,
   type AgentSessionDetail,
   type AgentSessionListItem,
   type EvaluationsSummary,
   type MetricsJob,
   type MetricsSummary,
+  type TokensReport,
 } from '@/lib/metrics-api'
 
 export type MetricsPageData = {
@@ -21,8 +22,8 @@ export type MetricsPageData = {
   evaluationsSummary: EvaluationsSummary | null
   exportJob: MetricsJob | null
   analysisJob: MetricsJob | null
-  creditBalance: number | null
   agentSessions: AgentSessionListItem[]
+  tokensReport: TokensReport | null
   isLoading: boolean
   isSyncing: boolean
   isAnalyzing: boolean
@@ -37,8 +38,8 @@ export function useMetricsPage(apiKey: string): MetricsPageData {
   const [evaluationsSummary, setEvaluationsSummary] = useState<EvaluationsSummary | null>(null)
   const [exportJob, setExportJob] = useState<MetricsJob | null>(null)
   const [analysisJob, setAnalysisJob] = useState<MetricsJob | null>(null)
-  const [creditBalance, setCreditBalance] = useState<number | null>(null)
   const [agentSessions, setAgentSessions] = useState<AgentSessionListItem[]>([])
+  const [tokensReport, setTokensReport] = useState<TokensReport | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isSyncing, setIsSyncing] = useState(false)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
@@ -48,12 +49,13 @@ export function useMetricsPage(apiKey: string): MetricsPageData {
     setIsLoading(true)
     setError(null)
     try {
-      const [metrics, evaluations, exportJobResult, analysisJobResult, sessions] = await Promise.all([
+      const [metrics, evaluations, exportJobResult, analysisJobResult, sessions, tokens] = await Promise.all([
         getMetricsSummary(),
         getEvaluationsSummary(),
         getLatestExportJob(),
         getLatestAnalysisJob(),
         getAgentSessions(),
+        getTokensReport(),
       ])
       if (cancelled?.current) return
       setMetricsSummary(metrics)
@@ -61,23 +63,13 @@ export function useMetricsPage(apiKey: string): MetricsPageData {
       setExportJob(exportJobResult)
       setAnalysisJob(analysisJobResult)
       setAgentSessions(sessions)
+      setTokensReport(tokens)
     } catch {
       if (!cancelled?.current) setError('Não foi possível carregar as métricas.')
     } finally {
       if (!cancelled?.current) setIsLoading(false)
     }
-
-    if (apiKey.trim()) {
-      try {
-        const balance = await getCreditBalance(apiKey.trim())
-        if (!cancelled?.current) setCreditBalance(balance.available)
-      } catch {
-        if (!cancelled?.current) setCreditBalance(null)
-      }
-    } else {
-      if (!cancelled?.current) setCreditBalance(null)
-    }
-  }, [apiKey])
+  }, [])
 
   useEffect(() => {
     const cancelled = { current: false }
@@ -135,8 +127,8 @@ export function useMetricsPage(apiKey: string): MetricsPageData {
     evaluationsSummary,
     exportJob,
     analysisJob,
-    creditBalance,
     agentSessions,
+    tokensReport,
     isLoading,
     isSyncing,
     isAnalyzing,

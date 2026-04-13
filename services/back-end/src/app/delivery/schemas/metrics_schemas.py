@@ -5,7 +5,7 @@ from datetime import datetime
 from pydantic import BaseModel
 
 from app.domain_models.metrics.job_models import MetricsJob
-from app.domain_models.metrics.models import MetricsSummary
+from app.domain_models.metrics.models import MetricsSummary, ModelTokenEntry, TokenEntry, TokensReport
 
 
 class HealthResponseSchema(BaseModel):
@@ -23,6 +23,38 @@ class MetricsSummaryResponseSchema(BaseModel):
             total_sessions=summary.total_sessions,
             total_messages=summary.total_messages,
             total_rag_hits=summary.total_rag_hits,
+        )
+
+
+class TokenEntrySchema(BaseModel):
+    date: str
+    tokens: int
+
+    @classmethod
+    def from_domain(cls, entry: TokenEntry) -> "TokenEntrySchema":
+        return cls(date=entry.date, tokens=entry.tokens)
+
+
+class ModelTokenEntrySchema(BaseModel):
+    model_id: str
+    tokens: int
+
+    @classmethod
+    def from_domain(cls, entry: ModelTokenEntry) -> "ModelTokenEntrySchema":
+        return cls(model_id=entry.model_id, tokens=entry.tokens)
+
+
+class TokensReportResponseSchema(BaseModel):
+    total_tokens: int
+    time_series: list[TokenEntrySchema]
+    by_model: list[ModelTokenEntrySchema]
+
+    @classmethod
+    def from_domain(cls, report: TokensReport) -> "TokensReportResponseSchema":
+        return cls(
+            total_tokens=report.total_tokens,
+            time_series=[TokenEntrySchema.from_domain(e) for e in report.time_series],
+            by_model=[ModelTokenEntrySchema.from_domain(e) for e in report.by_model],
         )
 
 

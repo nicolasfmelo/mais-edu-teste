@@ -1,6 +1,18 @@
 import { useState } from 'react'
+import {
+  Area,
+  AreaChart,
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts'
 import { useMetricsPage } from '@/hooks/use-metrics-page'
-import type { AgentSessionDetail, AgentSessionListItem, MetricsJob } from '@/lib/metrics-api'
+import type { AgentSessionDetail, AgentSessionListItem, MetricsJob, TokensReport } from '@/lib/metrics-api'
 
 function JobStatusBadge({ job, label }: { job: MetricsJob | null; label: string }) {
   if (!job) return <span className="text-xs text-[#667781]">{label}: nunca executado</span>
@@ -403,6 +415,79 @@ function ResultadosUnitariosTab({
   )
 }
 
+// ─── Token charts ─────────────────────────────────────────────────────────────
+function TokensTimeSeriesChart({ report }: { report: TokensReport }) {
+  if (report.time_series.length === 0) {
+    return (
+      <div className="flex h-48 items-center justify-center">
+        <p className="text-sm text-[#667781]">Sem dados ainda.</p>
+      </div>
+    )
+  }
+
+  return (
+    <ResponsiveContainer width="100%" height={200}>
+      <AreaChart data={report.time_series} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+        <defs>
+          <linearGradient id="tokenGradient" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="5%" stopColor="#00a884" stopOpacity={0.3} />
+            <stop offset="95%" stopColor="#00a884" stopOpacity={0} />
+          </linearGradient>
+        </defs>
+        <CartesianGrid strokeDasharray="3 3" stroke="#e9edef" />
+        <XAxis dataKey="date" tick={{ fontSize: 11, fill: '#667781' }} />
+        <YAxis tick={{ fontSize: 11, fill: '#667781' }} width={50} />
+        <Tooltip
+          contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid #e9edef' }}
+          formatter={(v) => [(v as number).toLocaleString(), 'Tokens']}
+        />
+        <Area
+          type="monotone"
+          dataKey="tokens"
+          stroke="#00a884"
+          strokeWidth={2}
+          fill="url(#tokenGradient)"
+        />
+      </AreaChart>
+    </ResponsiveContainer>
+  )
+}
+
+const MODEL_COLORS = ['#00a884', '#25d366', '#128c7e', '#075e54', '#34b7f1', '#a29bfe']
+
+function TokensByModelChart({ report }: { report: TokensReport }) {
+  if (report.by_model.length === 0) {
+    return (
+      <div className="flex h-48 items-center justify-center">
+        <p className="text-sm text-[#667781]">Sem dados ainda.</p>
+      </div>
+    )
+  }
+
+  return (
+    <ResponsiveContainer width="100%" height={Math.max(160, report.by_model.length * 48)}>
+      <BarChart
+        data={report.by_model}
+        layout="vertical"
+        margin={{ top: 4, right: 16, left: 8, bottom: 0 }}
+      >
+        <CartesianGrid strokeDasharray="3 3" stroke="#e9edef" horizontal={false} />
+        <XAxis type="number" tick={{ fontSize: 11, fill: '#667781' }} />
+        <YAxis type="category" dataKey="model_id" tick={{ fontSize: 11, fill: '#667781' }} width={130} />
+        <Tooltip
+          contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid #e9edef' }}
+          formatter={(v) => [(v as number).toLocaleString(), 'Tokens']}
+        />
+        <Bar dataKey="tokens" radius={[0, 4, 4, 0]}>
+          {report.by_model.map((_, i) => (
+            <Cell key={i} fill={MODEL_COLORS[i % MODEL_COLORS.length]} />
+          ))}
+        </Bar>
+      </BarChart>
+    </ResponsiveContainer>
+  )
+}
+
 // ─── Main MetricsPage ─────────────────────────────────────────────────────────
 export function MetricsPage({ apiKey }: { apiKey: string }) {
   const {
@@ -410,8 +495,8 @@ export function MetricsPage({ apiKey }: { apiKey: string }) {
     evaluationsSummary,
     exportJob,
     analysisJob,
-    creditBalance,
     agentSessions,
+    tokensReport,
     isLoading,
     isSyncing,
     isAnalyzing,
@@ -638,25 +723,6 @@ export function MetricsPage({ apiKey }: { apiKey: string }) {
               </section>
             )}
 
-            {/* Credits & Token Usage */}
-            {ev && (
-              <section>
-                <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-[#667781]">
-                  Créditos &amp; Uso
-                </h2>
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  <StatCard
-                    label="Tokens usados na análise"
-                    value={ev.total_tokens_used.toLocaleString()}
-                  />
-                  <StatCard
-                    label="Saldo de créditos disponível"
-                    value={creditBalance !== null ? creditBalance.toLocaleString() : '—'}
-                  />
-                </div>
-              </section>
-            )}
-
             {/* Operational metrics */}
             {op && (
               <section>
@@ -669,6 +735,30 @@ export function MetricsPage({ apiKey }: { apiKey: string }) {
                   <StatCard label="Hits de RAG" value={op.total_rag_hits} />
                 </div>
               </section>
+            )}
+
+            {/* Token consumption charts */}
+            {tokensReport && (
+              <>
+                <section className="rounded-2xl border border-black/6 bg-white p-6">
+                  <div className="mb-4 flex items-baseline justify-between">
+                    <h2 className="text-sm font-semibold uppercase tracking-wider text-[#667781]">
+                      Consumo de Tokens · Total por Dia
+                    </h2>
+                    <span className="text-xs text-[#667781]">
+                      Total: {tokensReport.total_tokens.toLocaleString()} tokens
+                    </span>
+                  </div>
+                  <TokensTimeSeriesChart report={tokensReport} />
+                </section>
+
+                <section className="rounded-2xl border border-black/6 bg-white p-6">
+                  <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-[#667781]">
+                    Consumo de Tokens · Por Modelo
+                  </h2>
+                  <TokensByModelChart report={tokensReport} />
+                </section>
+              </>
             )}
           </div>
         ) : (

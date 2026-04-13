@@ -17,20 +17,38 @@ class CourseAgentGraphState:
     invocation: AgentInvocation
     retrieved_chunks: tuple[RetrievedChunk, ...] = field(default_factory=tuple)
     reply_content: str = ""
+    prompt_tokens: int | None = None
+    completion_tokens: int | None = None
+    model_id: str | None = None
 
     def with_retrieved_chunks(self, retrieved_chunks: tuple[RetrievedChunk, ...]) -> "CourseAgentGraphState":
         return CourseAgentGraphState(
             invocation=self.invocation,
             retrieved_chunks=retrieved_chunks,
             reply_content=self.reply_content,
+            prompt_tokens=self.prompt_tokens,
+            completion_tokens=self.completion_tokens,
+            model_id=self.model_id,
         )
 
-    def with_reply_content(self, reply_content: str) -> "CourseAgentGraphState":
+    def with_reply(
+        self,
+        reply_content: str,
+        prompt_tokens: int | None,
+        completion_tokens: int | None,
+        model_id: str | None = None,
+    ) -> "CourseAgentGraphState":
         return CourseAgentGraphState(
             invocation=self.invocation,
             retrieved_chunks=self.retrieved_chunks,
             reply_content=reply_content,
+            prompt_tokens=prompt_tokens,
+            completion_tokens=completion_tokens,
+            model_id=model_id,
         )
+
+    def with_reply_content(self, reply_content: str) -> "CourseAgentGraphState":
+        return self.with_reply(reply_content, self.prompt_tokens, self.completion_tokens, self.model_id)
 
     def to_payload(self) -> dict[str, object]:
         return {
@@ -64,6 +82,9 @@ class LangGraphCourseAgent:
             run_id=AgentRunId.new(),
             content=final_state.reply_content,
             retrieved_chunks=final_state.retrieved_chunks,
+            prompt_tokens=final_state.prompt_tokens,
+            completion_tokens=final_state.completion_tokens,
+            model_id=final_state.model_id,
         )
 
     def _build_graph(self):
@@ -92,4 +113,9 @@ class LangGraphCourseAgent:
             retrieved_chunks=state.retrieved_chunks,
         )
         gateway_reply = self._ai_gateway_client.generate_reply(gateway_request)
-        return state.with_reply_content(gateway_reply.content).to_payload()
+        return state.with_reply(
+            reply_content=gateway_reply.content,
+            prompt_tokens=gateway_reply.prompt_tokens,
+            completion_tokens=gateway_reply.completion_tokens,
+            model_id=gateway_reply.model_id,
+        ).to_payload()

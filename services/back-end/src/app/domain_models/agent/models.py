@@ -76,3 +76,6 @@ class AgentReply:
     run_id: AgentRunId
     content: str
     retrieved_chunks: tuple[RetrievedChunk, ...] = field(default_factory=tuple)
+    prompt_tokens: int | None = None
+    completion_tokens: int | None = None
+    model_id: str | None = None
