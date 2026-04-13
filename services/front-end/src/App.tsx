@@ -1,12 +1,24 @@
-import { useState } from 'react'
+import { lazy, Suspense, useState } from 'react'
 import { ApiKeyModal } from '@/components/chat/api-key-modal'
 import { AppToolbar, type AppPage } from '@/components/chat/app-toolbar'
 import { ChatPanel } from '@/components/chat/chat-panel'
 import { ThreadSidebar } from '@/components/chat/thread-sidebar'
-import { DocsPage } from '@/components/docs/docs-page'
-import { LLMOpsPage } from '@/components/llmops/llmops-page'
-import { MetricsPage } from '@/components/metrics/metrics-page'
 import { useChatWorkspace } from '@/hooks/use-chat-workspace'
+
+const DocsPage = lazy(async () => {
+  const module = await import('@/components/docs/docs-page')
+  return { default: module.DocsPage }
+})
+
+const LLMOpsPage = lazy(async () => {
+  const module = await import('@/components/llmops/llmops-page')
+  return { default: module.LLMOpsPage }
+})
+
+const MetricsPage = lazy(async () => {
+  const module = await import('@/components/metrics/metrics-page')
+  return { default: module.MetricsPage }
+})
 
 function App() {
   const workspace = useChatWorkspace()
@@ -34,11 +46,17 @@ function App() {
         />
 
         {activePage === 'metrics' ? (
-          <MetricsPage apiKey={workspace.apiKey} />
+          <Suspense fallback={<PageLoadingState label="Carregando métricas" />}>
+            <MetricsPage apiKey={workspace.apiKey} />
+          </Suspense>
         ) : activePage === 'llmops' ? (
-          <LLMOpsPage />
+          <Suspense fallback={<PageLoadingState label="Carregando LLMOps" />}>
+            <LLMOpsPage />
+          </Suspense>
         ) : activePage === 'docs' ? (
-          <DocsPage />
+          <Suspense fallback={<PageLoadingState label="Carregando documentação" />}>
+            <DocsPage />
+          </Suspense>
         ) : (
           <section className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[340px_minmax(0,1fr)]">
             <ThreadSidebar
@@ -77,6 +95,16 @@ function App() {
         />
       ) : null}
     </main>
+  )
+}
+
+function PageLoadingState({ label }: { label: string }) {
+  return (
+    <section className="flex min-h-0 flex-1 items-center justify-center bg-[#f0f2f5]">
+      <div className="rounded-2xl border border-black/6 bg-white px-5 py-4 text-sm font-medium text-[#667781] shadow-sm">
+        {label}...
+      </div>
+    </section>
   )
 }
 
