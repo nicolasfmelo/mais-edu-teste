@@ -91,6 +91,13 @@ function activeVersionOf(entry: PromptRegistryEntry | null) {
   return entry?.versions.find((version) => version.is_active) ?? null
 }
 
+function timelineLabel(version: PromptVersion, totalVersions: number) {
+  if (version.version_number === 1) {
+    return totalVersions === 1 ? 'baseline ativa' : 'baseline'
+  }
+  return `versao ${version.version_number}`
+}
+
 function useAgentPromptRegistry(promptKey: string) {
   const [entry, setEntry] = useState<PromptRegistryEntry | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -315,32 +322,61 @@ function AgentPromptPanel({ config }: { config: AgentPromptConfig }) {
             </div>
 
             {entry?.versions.length ? (
-              <div className="space-y-2">
+              <div className="relative pl-3">
+                <div className="absolute bottom-3 left-[15px] top-3 w-px bg-[linear-gradient(180deg,#d7dfdd_0,#bccbc7_100%)]" />
                 {[...entry.versions].reverse().map((version) => {
                   const isSelected = version.id === selectedVersion?.id
+                  const isBaseline = version.version_number === 1
                   return (
-                    <button
-                      key={version.id}
-                      type="button"
-                      onClick={() => setSelectedVersionId(version.id)}
-                      className={`w-full rounded-2xl border px-4 py-3 text-left transition ${
-                        isSelected
-                          ? 'border-[#00a884]/40 bg-white shadow-sm'
-                          : 'border-transparent bg-white/60 hover:border-black/8 hover:bg-white'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between gap-3">
-                        <span className="text-sm font-semibold text-[#111b21]">V{version.version_number}</span>
-                        {version.is_active ? (
-                          <span className="rounded-full bg-[#d9fdd3] px-2 py-0.5 text-[11px] font-semibold text-[#0b5c4b]">
-                            ativa
-                          </span>
-                        ) : null}
-                      </div>
-                      <p className="mt-2 text-xs leading-5 text-[#54656f]">
-                        {version.description}
-                      </p>
-                    </button>
+                    <div key={version.id} className="relative pb-3 pl-6 last:pb-0">
+                      <div
+                        className={`absolute left-0 top-5 size-3 rounded-full border-2 ${
+                          isSelected
+                            ? 'border-[#00a884] bg-[#00a884]'
+                            : version.is_active
+                              ? 'border-[#00a884] bg-[#d9fdd3]'
+                              : 'border-[#c3cfcc] bg-white'
+                        }`}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setSelectedVersionId(version.id)}
+                        className={`w-full rounded-[22px] border px-4 py-3 text-left transition ${
+                          isSelected
+                            ? 'border-[#00a884]/45 bg-white shadow-[0_10px_24px_rgba(17,27,33,0.06)]'
+                            : 'border-black/5 bg-white/75 hover:border-black/10 hover:bg-white'
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="text-sm font-semibold text-[#111b21]">V{version.version_number}</span>
+                              <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#7a8e8a]">
+                                {timelineLabel(version, entry.versions.length)}
+                              </span>
+                            </div>
+                            <p className="mt-2 text-xs leading-5 text-[#54656f]">{version.description}</p>
+                          </div>
+                          <div className="flex shrink-0 flex-col items-end gap-1">
+                            {version.is_active ? (
+                              <span className="rounded-full bg-[#d9fdd3] px-2 py-0.5 text-[11px] font-semibold text-[#0b5c4b]">
+                                ativa
+                              </span>
+                            ) : null}
+                            {isSelected ? (
+                              <span className="rounded-full bg-[#eef7f4] px-2 py-0.5 text-[11px] font-semibold text-[#32525a]">
+                                selecionada
+                              </span>
+                            ) : null}
+                            {isBaseline ? (
+                              <span className="rounded-full bg-[#f3f0e6] px-2 py-0.5 text-[11px] font-semibold text-[#7b6230]">
+                                baseline
+                              </span>
+                            ) : null}
+                          </div>
+                        </div>
+                      </button>
+                    </div>
                   )
                 })}
               </div>
@@ -652,30 +688,6 @@ export function LLMOpsPage() {
   return (
     <section className="min-h-0 flex-1 overflow-auto bg-[radial-gradient(circle_at_top_left,#f6fffb_0,#eef3f2_42%,#e7ecef_100%)] px-4 py-5 sm:px-5 lg:px-6">
       <div className="mx-auto flex w-full max-w-[1520px] flex-col gap-5">
-        <div className="overflow-hidden rounded-[32px] border border-black/8 bg-[linear-gradient(135deg,#10252a_0%,#143038_58%,#224a42_100%)] text-white shadow-[0_24px_70px_rgba(17,27,33,0.14)]">
-          <div className="grid gap-6 px-6 py-6 lg:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.65fr)] lg:px-8 lg:py-7">
-            <div>
-              <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-[#c7dbd4]">
-                <Workflow className="size-3.5" />
-                Control room
-              </div>
-              <h1 className="mt-4 max-w-3xl text-3xl font-semibold tracking-tight text-white lg:text-[2.1rem]">
-                LLMOps por agente, com baseline default e versionamento operacional.
-              </h1>
-              <p className="mt-3 max-w-3xl text-sm leading-7 text-[#c1d2d9]">
-                Cada aba controla uma chave fixa do registry. O baseline preexistente serve como linha base e toda
-                alteracao posterior entra como nova versao publicavel no runtime.
-              </p>
-            </div>
-
-            <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
-              <HeaderStat label="agentes operados" value="2" />
-              <HeaderStat label="prompts baseline" value="Chat + NPS" />
-              <HeaderStat label="regra de edicao" value="editar = nova versao" />
-            </div>
-          </div>
-        </div>
-
         <div className="flex flex-wrap gap-3">
           {agentConfigs.map((config) => {
             const Icon = config.icon
@@ -710,14 +722,5 @@ export function LLMOpsPage() {
         <AgentPromptPanel config={activeConfig} />
       </div>
     </section>
-  )
-}
-
-function HeaderStat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-[24px] border border-white/10 bg-white/10 px-4 py-4">
-      <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#9fb4bc]">{label}</p>
-      <p className="mt-2 text-base font-semibold text-white">{value}</p>
-    </div>
   )
 }
