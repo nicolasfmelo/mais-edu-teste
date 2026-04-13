@@ -5,10 +5,13 @@ import type { ModelOption } from '@/lib/chat-ui'
 
 export type AppPage = 'chat' | 'metrics' | 'llmops' | 'docs'
 
-const quickRoutes: { label: string; icon: typeof ChartColumn; page: AppPage }[] = [
+const operationalRoutes: { label: string; icon: typeof ChartColumn; page: AppPage }[] = [
   { label: 'Chat', icon: MessageSquare, page: 'chat' },
   { label: 'Metrics', icon: ChartColumn, page: 'metrics' },
   { label: 'LLMOps', icon: Workflow, page: 'llmops' },
+]
+
+const referenceRoutes: { label: string; icon: typeof ChartColumn; page: AppPage }[] = [
   { label: 'Solution Docs', icon: BookOpen, page: 'docs' },
 ]
 
@@ -112,23 +115,50 @@ export function AppToolbar({
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          {quickRoutes.map(({ label, icon: Icon, page }) => (
-            <Button
-              key={label}
-              type="button"
-              variant="ghost"
-              onClick={() => onNavigateTo(page)}
-              className={`rounded-full border px-3.5 text-sm font-medium transition ${
-                activePage === page
-                  ? 'border-[#00a884] bg-[#00a884] text-white hover:bg-[#009977]'
-                  : 'border-[#00a884]/40 bg-white text-[#00a884] hover:bg-[#f0fdf9] hover:border-[#00a884]/70'
-              }`}
-            >
-              <Icon className="size-4" />
-              {label}
-            </Button>
-          ))}
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2 rounded-full border border-[#00a884]/18 bg-[#f3f7f6] px-2 py-2">
+            <span className="px-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#667781]">
+              Operate
+            </span>
+            {operationalRoutes.map(({ label, icon: Icon, page }) => (
+              <Button
+                key={label}
+                type="button"
+                variant="ghost"
+                onClick={() => onNavigateTo(page)}
+                className={`rounded-full border px-3.5 text-sm font-medium transition ${
+                  activePage === page
+                    ? 'border-[#00a884] bg-[#00a884] text-white hover:bg-[#009977]'
+                    : 'border-[#00a884]/36 bg-white text-[#00a884] hover:bg-[#f0fdf9] hover:border-[#00a884]/70'
+                }`}
+              >
+                <Icon className="size-4" />
+                {label}
+              </Button>
+            ))}
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2 rounded-full border border-black/8 bg-white px-2 py-2">
+            <span className="px-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#667781]">
+              Reference
+            </span>
+            {referenceRoutes.map(({ label, icon: Icon, page }) => (
+              <Button
+                key={label}
+                type="button"
+                variant="ghost"
+                onClick={() => onNavigateTo(page)}
+                className={`rounded-full border px-3.5 text-sm font-medium transition ${
+                  activePage === page
+                    ? 'border-[#17343b] bg-[#17343b] text-white hover:bg-[#1d444d]'
+                    : 'border-black/8 bg-white text-[#54656f] hover:bg-[#f5f7f7] hover:border-black/12'
+                }`}
+              >
+                <Icon className="size-4" />
+                {label}
+              </Button>
+            ))}
+          </div>
         </div>
       </div>
     </header>
