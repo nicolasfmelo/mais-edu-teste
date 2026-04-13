@@ -32,6 +32,7 @@ from app.integrations.database.repos.sqlalchemy_session_repository import SQLAlc
 from app.integrations.database.sqlalchemy_database import SQLAlchemyDatabase
 from app.integrations.external_apis.llm_proxy_gateway_client import LLMProxyGatewayClient
 from app.integrations.llm_providers.fake_embedding_client import FakeEmbeddingClient
+from app.integrations.local_files.course_catalog_document_source import CourseCatalogDocumentSource
 from app.integrations.local_files.markdown_institution_profile_source import MarkdownInstitutionProfileSource
 from app.integrations.object_store.minio_conversation_export_store import MinioConversationExportStore
 from app.integrations.object_store.minio_conversation_reader import MinioConversationReader
@@ -107,6 +108,7 @@ class AppContainer:
         self._institution_profile_source = MarkdownInstitutionProfileSource(
             profile_path=self._settings.institution_profile_path
         )
+        self._course_catalog_document_source = CourseCatalogDocumentSource(dataset_dir=self._settings.datasets_dir)
         self._institution_profile = self._institution_profile_source.load()
 
         self._prompt_assembly_engine = PromptAssemblyEngine(institution_profile=self._institution_profile)
@@ -180,17 +182,17 @@ class AppContainer:
         self._course_catalog_bootstrap_service = (
             CourseCatalogBootstrapService(
                 repository=self._course_catalog_repository,
+                document_source=self._course_catalog_document_source,
                 parser=self._course_markdown_parser,
-                dataset_dir=self._settings.datasets_dir,
             )
         )
         self._course_catalog_knowledge_bootstrap_service = (
             CourseCatalogKnowledgeBootstrapService(
                 knowledge_repository=self._knowledge_repository,
+                document_source=self._course_catalog_document_source,
                 parser=self._course_markdown_parser,
                 knowledge_engine=self._course_catalog_knowledge_engine,
                 chunking_engine=self._chunking_engine,
-                dataset_dir=self._settings.datasets_dir,
             )
         )
 

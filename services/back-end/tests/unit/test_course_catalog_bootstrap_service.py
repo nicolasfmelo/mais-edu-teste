@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from app.domain_models.indexing.models import CatalogCourse
+from app.domain_models.indexing.models import CatalogCourse, CatalogCourseDocument
 from app.engines.indexing.course_markdown_parser import CourseMarkdownParser
 from app.services.indexing.course_catalog_bootstrap_service import CourseCatalogBootstrapService
 
@@ -16,6 +16,14 @@ class FakeCourseCatalogRepository:
     def upsert_courses(self, courses: tuple[CatalogCourse, ...]) -> int:
         self.courses = courses
         return len(courses)
+
+
+class FakeCourseCatalogDocumentSource:
+    def __init__(self, documents: tuple[CatalogCourseDocument, ...]) -> None:
+        self._documents = documents
+
+    def list_documents(self) -> tuple[CatalogCourseDocument, ...]:
+        return self._documents
 
 
 def test_course_catalog_bootstrap_service_loads_courses_and_upserts(tmp_path: Path) -> None:
@@ -43,10 +51,19 @@ Atua em operacoes administrativas.
     )
 
     repository = FakeCourseCatalogRepository()
+    document_source = FakeCourseCatalogDocumentSource(
+        (
+            CatalogCourseDocument(
+                slug="graduacao-administracao",
+                raw_text=(dataset_dir / "graduacao-administracao.md").read_text(encoding="utf-8"),
+                source_path=Path("graduacao-administracao.md"),
+            ),
+        )
+    )
     service = CourseCatalogBootstrapService(
         repository=repository,
+        document_source=document_source,
         parser=CourseMarkdownParser(),
-        dataset_dir=dataset_dir,
     )
 
     result = service.bootstrap()

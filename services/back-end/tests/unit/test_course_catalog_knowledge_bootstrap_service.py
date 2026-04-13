@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from app.domain_models.common.ids import DocumentId
-from app.domain_models.indexing.models import DocumentChunk
+from app.domain_models.indexing.models import CatalogCourseDocument, DocumentChunk
 from app.domain_models.rag.models import KnowledgeDocument
 from app.engines.indexing.chunking_engine import ChunkingEngine
 from app.engines.indexing.course_catalog_knowledge_engine import CourseCatalogKnowledgeEngine
@@ -22,6 +22,14 @@ class FakeKnowledgeRepository:
 
     def search(self, query_text: str, query_embedding: tuple[float, ...], limit: int):  # noqa: ANN001
         return tuple()
+
+
+class FakeCourseCatalogDocumentSource:
+    def __init__(self, documents: tuple[CatalogCourseDocument, ...]) -> None:
+        self._documents = documents
+
+    def list_documents(self) -> tuple[CatalogCourseDocument, ...]:
+        return self._documents
 
 
 def test_course_catalog_knowledge_bootstrap_service_indexes_dataset_into_knowledge_repository(
@@ -51,12 +59,21 @@ Atua em operacoes administrativas.
     )
 
     repository = FakeKnowledgeRepository()
+    document_source = FakeCourseCatalogDocumentSource(
+        (
+            CatalogCourseDocument(
+                slug="graduacao-administracao",
+                raw_text=(dataset_dir / "graduacao-administracao.md").read_text(encoding="utf-8"),
+                source_path=Path("graduacao-administracao.md"),
+            ),
+        )
+    )
     service = CourseCatalogKnowledgeBootstrapService(
         knowledge_repository=repository,
+        document_source=document_source,
         parser=CourseMarkdownParser(),
         knowledge_engine=CourseCatalogKnowledgeEngine(),
         chunking_engine=ChunkingEngine(),
-        dataset_dir=dataset_dir,
     )
 
     result = service.bootstrap()

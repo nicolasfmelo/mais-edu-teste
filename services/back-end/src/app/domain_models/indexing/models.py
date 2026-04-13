@@ -54,6 +54,13 @@ class CatalogCourseSource:
 
 
 @dataclass(frozen=True)
+class CatalogCourseDocument:
+    slug: str
+    raw_text: str
+    source_path: Path
+
+
+@dataclass(frozen=True)
 class CatalogCourse:
     id: UUID
     slug: str

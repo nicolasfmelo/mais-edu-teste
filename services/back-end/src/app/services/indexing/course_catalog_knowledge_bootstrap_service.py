@@ -1,8 +1,6 @@
 from __future__ import annotations
 
-from pathlib import Path
-
-from app.domain_models.common.contracts import KnowledgeRepository
+from app.domain_models.common.contracts import CourseCatalogDocumentSource, KnowledgeRepository
 from app.domain_models.indexing.models import CatalogCourse, CatalogKnowledgeBootstrapResult
 from app.engines.indexing.chunking_engine import ChunkingEngine
 from app.engines.indexing.course_catalog_knowledge_engine import CourseCatalogKnowledgeEngine
@@ -13,16 +11,16 @@ class CourseCatalogKnowledgeBootstrapService:
     def __init__(
         self,
         knowledge_repository: KnowledgeRepository,
+        document_source: CourseCatalogDocumentSource,
         parser: CourseMarkdownParser,
         knowledge_engine: CourseCatalogKnowledgeEngine,
         chunking_engine: ChunkingEngine,
-        dataset_dir: Path,
     ) -> None:
         self._knowledge_repository = knowledge_repository
+        self._document_source = document_source
         self._parser = parser
         self._knowledge_engine = knowledge_engine
         self._chunking_engine = chunking_engine
-        self._dataset_dir = dataset_dir
 
     def bootstrap(self) -> CatalogKnowledgeBootstrapResult:
         courses = self._load_courses()
@@ -42,8 +40,5 @@ class CourseCatalogKnowledgeBootstrapService:
         )
 
     def _load_courses(self) -> tuple[CatalogCourse, ...]:
-        if not self._dataset_dir.exists():
-            raise FileNotFoundError(f"Dataset directory not found: {self._dataset_dir}")
-
-        files = sorted(self._dataset_dir.glob("*.md"))
-        return tuple(self._parser.parse_file(file_path=file_path, dataset_dir=self._dataset_dir) for file_path in files)
+        documents = self._document_source.list_documents()
+        return tuple(self._parser.parse_document(document) for document in documents)

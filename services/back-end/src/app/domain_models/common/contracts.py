@@ -13,7 +13,7 @@ from app.domain_models.agent.models import (
 )
 from app.domain_models.chat.models import ChatSession
 from app.domain_models.common.ids import DocumentId, SessionId
-from app.domain_models.indexing.models import CatalogCourse, DocumentChunk, UniversityRecord
+from app.domain_models.indexing.models import CatalogCourse, CatalogCourseDocument, DocumentChunk, UniversityRecord
 from app.domain_models.metrics.models import ConversationMetrics
 from app.domain_models.prompt.models import (
     PromptActivation,
@@ -61,6 +61,10 @@ class CourseCatalogRepository(Protocol):
         modality: str | None = None,
         limit: int = 5,
     ) -> tuple[CatalogCourse, ...]: ...
+
+
+class CourseCatalogDocumentSource(Protocol):
+    def list_documents(self) -> tuple[CatalogCourseDocument, ...]: ...
 
 
 class CreditSystemClient(Protocol):

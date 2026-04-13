@@ -1,5 +1,6 @@
 from pathlib import Path
 
+from app.domain_models.indexing.models import CatalogCourseDocument
 from app.engines.indexing.course_markdown_parser import CourseMarkdownParser
 
 
@@ -30,7 +31,13 @@ Atua em PMO, implantacoes e lideranca de projetos.
     )
 
     parser = CourseMarkdownParser()
-    course = parser.parse_file(file_path=course_file, dataset_dir=dataset_dir)
+    course = parser.parse_document(
+        CatalogCourseDocument(
+            slug=course_file.stem,
+            raw_text=course_file.read_text(encoding="utf-8"),
+            source_path=Path("mba-gestao-projetos.md"),
+        )
+    )
 
     assert course.slug == "mba-gestao-projetos"
     assert course.title == "MBA em Gestao de Projetos"
