@@ -539,9 +539,31 @@ function AgentPromptPanel({ config }: { config: AgentPromptConfig }) {
           </ul>
         </div>
 
-        <ComposerCard
+        <div className="rounded-[28px] border border-black/8 bg-white p-5 shadow-[0_20px_50px_rgba(17,27,33,0.06)]">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[#667781]">Composer</p>
+          <h3 className="mt-2 text-lg font-semibold text-[#111b21]">Abrir editor focado</h3>
+          <p className="mt-3 text-sm leading-6 text-[#667781]">
+            Use o editor em sobreposicao para criar baseline ou publicar uma nova versao sem disputar espaco com a leitura do runtime.
+          </p>
+          <Button
+            type="button"
+            onClick={() => {
+              if (!entry) {
+                openCreatePrompt()
+                return
+              }
+              openCreateVersion(selectedVersion ?? activeVersion)
+            }}
+            className="mt-4 w-full rounded-full bg-[#111b21] px-4 text-white hover:bg-[#1f2c33]"
+          >
+            {entry ? 'Abrir editor de versao' : 'Criar prompt base'}
+          </Button>
+        </div>
+      </section>
+
+      {composerOpen ? (
+        <ComposerOverlay
           config={config}
-          isOpen={composerOpen}
           state={composerState}
           isSubmitting={isSubmitting}
           onClose={() => setComposerOpen(false)}
@@ -550,7 +572,7 @@ function AgentPromptPanel({ config }: { config: AgentPromptConfig }) {
             void handleSubmit()
           }}
         />
-      </section>
+      ) : null}
     </div>
   )
 }
@@ -586,9 +608,8 @@ function StatRow({ label, value }: { label: string; value: string }) {
   )
 }
 
-function ComposerCard({
+function ComposerOverlay({
   config,
-  isOpen,
   state,
   isSubmitting,
   onClose,
@@ -596,7 +617,6 @@ function ComposerCard({
   onSubmit,
 }: {
   config: AgentPromptConfig
-  isOpen: boolean
   state: ComposerState
   isSubmitting: boolean
   onClose: () => void
@@ -604,81 +624,96 @@ function ComposerCard({
   onSubmit: () => void
 }) {
   return (
-    <div className="rounded-[28px] border border-black/8 bg-white p-5 shadow-[0_20px_50px_rgba(17,27,33,0.06)]">
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[#667781]">
-            {state.mode === 'create' ? 'Prompt base' : 'Nova versao'}
-          </p>
-          <h3 className="mt-1 text-lg font-semibold text-[#111b21]">
-            {state.mode === 'create'
-              ? `Criar baseline de ${config.shortLabel}`
-              : `Versionar prompt de ${config.shortLabel}`}
-          </h3>
+    <div className="fixed inset-0 z-50 flex items-center justify-end bg-[#0f171c]/38 p-3 sm:p-5" onClick={onClose}>
+      <div
+        className="flex h-full w-full max-w-[860px] flex-col overflow-hidden rounded-[32px] border border-[#17343b]/10 bg-white shadow-[0_28px_80px_rgba(17,27,33,0.22)]"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className={`border-b border-black/6 px-6 py-5 ${config.surfaceClass}`}>
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[#667781]">
+                {state.mode === 'create' ? 'Prompt base' : 'Nova versao'}
+              </p>
+              <h3 className="mt-1 text-2xl font-semibold text-[#111b21]">
+                {state.mode === 'create'
+                  ? `Criar baseline de ${config.shortLabel}`
+                  : `Versionar prompt de ${config.shortLabel}`}
+              </h3>
+            </div>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={onClose}
+              className="rounded-full border border-black/8 px-4 text-[#667781] hover:bg-white/75"
+            >
+              Fechar
+            </Button>
+          </div>
         </div>
-        {isOpen ? (
-          <Button
-            type="button"
-            variant="ghost"
-            onClick={onClose}
-            className="rounded-full border border-black/8 px-4 text-[#667781] hover:bg-[#f7f8fa]"
-          >
-            Fechar
-          </Button>
-        ) : null}
-      </div>
 
-      {isOpen ? (
-        <div className="mt-5 space-y-4">
+        <div className="flex-1 overflow-auto px-6 py-5">
           {state.mode === 'version' && state.sourceVersionNumber ? (
             <div className="rounded-2xl border border-[#00a884]/20 bg-[#f6fffb] px-4 py-3 text-sm text-[#0b5c4b]">
               Nova versao baseada na V{state.sourceVersionNumber}. A versao anterior continua preservada.
             </div>
           ) : null}
 
-          <label className="block">
-            <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-[#667781]">
-              Descricao da versao
-            </span>
-            <input
-              value={state.description}
-              onChange={(event) => onChange({ ...state, description: event.target.value })}
-              placeholder="Ex: reforca discovery antes de recomendar inscricao"
-              className="h-12 w-full rounded-2xl border border-black/10 bg-[#f7f8fa] px-4 text-sm text-[#111b21] outline-none transition focus:border-[#00a884] focus:bg-white"
-            />
-          </label>
+          <div className="mt-5 grid gap-5 lg:grid-cols-[280px_minmax(0,1fr)]">
+            <div className="rounded-[24px] border border-black/8 bg-[#f7f8fa] p-4">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#667781]">Modo do editor</p>
+              <div className="mt-4 space-y-3 text-sm leading-6 text-[#3b4a54]">
+                <p>
+                  {state.mode === 'create'
+                    ? 'Crie a linha base inicial deste agente diretamente a partir do registry.'
+                    : 'Revise a versao selecionada, ajuste o texto e publique uma nova iteracao versionada.'}
+                </p>
+                <p>Nenhuma versao historica sera sobrescrita.</p>
+              </div>
+            </div>
 
-          <label className="block">
-            <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-[#667781]">
-              Template do prompt
-            </span>
-            <textarea
-              value={state.template}
-              onChange={(event) => onChange({ ...state, template: event.target.value })}
-              placeholder="Escreva o prompt completo desta versao."
-              className="min-h-[320px] w-full rounded-[24px] border border-black/10 bg-[#111b21] px-4 py-4 font-mono text-[13px] leading-6 text-[#ecf4f7] outline-none transition focus:border-[#00a884]"
-            />
-          </label>
+            <div className="space-y-4">
+              <label className="block">
+                <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-[#667781]">
+                  Descricao da versao
+                </span>
+                <input
+                  value={state.description}
+                  onChange={(event) => onChange({ ...state, description: event.target.value })}
+                  placeholder="Ex: reforca discovery antes de recomendar inscricao"
+                  className="h-12 w-full rounded-2xl border border-black/10 bg-[#f7f8fa] px-4 text-sm text-[#111b21] outline-none transition focus:border-[#00a884] focus:bg-white"
+                />
+              </label>
 
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <p className="text-xs text-[#667781]">
-              A submissao salva uma nova linha de base versionada e nao altera textos historicos.
-            </p>
-            <Button
-              type="button"
-              onClick={onSubmit}
-              disabled={isSubmitting || !state.description.trim() || !state.template.trim()}
-              className="rounded-full bg-[#111b21] px-4 text-white hover:bg-[#1f2c33]"
-            >
-              {isSubmitting ? 'Salvando...' : state.mode === 'create' ? 'Criar prompt' : 'Salvar nova versao'}
-            </Button>
+              <label className="block">
+                <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-[#667781]">
+                  Template do prompt
+                </span>
+                <textarea
+                  value={state.template}
+                  onChange={(event) => onChange({ ...state, template: event.target.value })}
+                  placeholder="Escreva o prompt completo desta versao."
+                  className="min-h-[420px] w-full rounded-[24px] border border-black/10 bg-[#111b21] px-4 py-4 font-mono text-[13px] leading-6 text-[#ecf4f7] outline-none transition focus:border-[#00a884]"
+                />
+              </label>
+            </div>
           </div>
         </div>
-      ) : (
-        <p className="mt-4 text-sm leading-6 text-[#667781]">
-          Abra o composer para criar um prompt base ou publicar uma nova versao a partir da configuracao atual.
-        </p>
-      )}
+
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-black/6 px-6 py-4">
+          <p className="text-xs text-[#667781]">
+            A submissao salva uma nova linha de base versionada e nao altera textos historicos.
+          </p>
+          <Button
+            type="button"
+            onClick={onSubmit}
+            disabled={isSubmitting || !state.description.trim() || !state.template.trim()}
+            className="rounded-full bg-[#111b21] px-4 text-white hover:bg-[#1f2c33]"
+          >
+            {isSubmitting ? 'Salvando...' : state.mode === 'create' ? 'Criar prompt' : 'Salvar nova versao'}
+          </Button>
+        </div>
+      </div>
     </div>
   )
 }
