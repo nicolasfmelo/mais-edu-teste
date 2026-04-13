@@ -47,3 +47,4 @@ coverage/
 *.log
 *.env
 .codex
+services/AGENTS.md
