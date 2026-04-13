@@ -265,7 +265,7 @@ function AgentPromptPanel({ config }: { config: AgentPromptConfig }) {
   }
 
   return (
-    <div className="grid gap-5 lg:grid-cols-[minmax(0,1.45fr)_minmax(320px,0.9fr)]">
+    <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_320px]">
       <section className="flex min-h-[640px] flex-col overflow-hidden rounded-[28px] border border-black/8 bg-white shadow-[0_20px_50px_rgba(17,27,33,0.08)]">
         <div className={`border-b border-black/6 p-6 ${config.surfaceClass}`}>
           <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
@@ -314,7 +314,7 @@ function AgentPromptPanel({ config }: { config: AgentPromptConfig }) {
           </div>
         </div>
 
-        <div className="grid flex-1 gap-0 lg:grid-cols-[minmax(240px,290px)_minmax(0,1fr)]">
+        <div className="grid flex-1 gap-0 lg:grid-cols-[280px_minmax(0,1fr)]">
           <aside className="border-b border-black/6 bg-[#f7f8f9] p-4 lg:border-r lg:border-b-0">
             <div className="mb-4 flex items-center gap-2">
               <History className="size-4 text-[#00a884]" />
@@ -392,25 +392,36 @@ function AgentPromptPanel({ config }: { config: AgentPromptConfig }) {
             )}
           </aside>
 
-          <div className="flex flex-1 flex-col">
-            <div className="border-b border-black/6 p-5">
-              <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-                <div>
+          <div className="flex flex-1 flex-col bg-[linear-gradient(180deg,#fcfdfd_0,#f8faf9_100%)]">
+            <div className="border-b border-black/6 px-5 py-4">
+              <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_280px]">
+                <div className="rounded-[24px] border border-black/8 bg-white px-5 py-4 shadow-[0_8px_24px_rgba(17,27,33,0.04)]">
                   <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[#667781]">
                     Runtime atual
                   </p>
-                  <h3 className="mt-1 text-xl font-semibold text-[#111b21]">
+                  <h3 className="mt-2 text-2xl font-semibold tracking-tight text-[#111b21]">
                     {activeVersion ? `V${activeVersion.version_number} em producao` : 'Prompt nao configurado'}
                   </h3>
-                  <p className="mt-1 text-sm text-[#667781]">{formatUpdatedAt(activeVersion)}</p>
+                  <p className="mt-2 text-sm text-[#667781]">{formatUpdatedAt(activeVersion)}</p>
                 </div>
 
-                {activeVersion ? (
-                  <div className="rounded-2xl border border-black/8 bg-[#f7f8fa] px-4 py-3 text-sm text-[#3b4a54]">
-                    <span className="font-semibold text-[#111b21]">Descricao ativa:</span> {activeVersion.description}
+                <div className="rounded-[24px] border border-black/8 bg-[#f4f7f6] px-4 py-4">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#667781]">
+                    Estado operacional
+                  </p>
+                  <div className="mt-3 space-y-2">
+                    <StatRow label="Prompt key" value={config.promptKey} />
+                    <StatRow label="Versoes" value={String(entry?.versions.length ?? 0)} />
+                    <StatRow label="Ativa" value={activeVersion ? `V${activeVersion.version_number}` : 'Nao definida'} />
                   </div>
-                ) : null}
+                </div>
               </div>
+
+              {activeVersion ? (
+                <div className="mt-3 rounded-[22px] border border-black/8 bg-[#f7f8fa] px-4 py-3 text-sm text-[#3b4a54]">
+                  <span className="font-semibold text-[#111b21]">Descricao ativa:</span> {activeVersion.description}
+                </div>
+              ) : null}
             </div>
 
             <div className="flex-1 p-5">
@@ -431,7 +442,7 @@ function AgentPromptPanel({ config }: { config: AgentPromptConfig }) {
               ) : selectedVersion ? (
                 <div className="space-y-5">
                   <div className="flex flex-wrap items-center gap-3">
-                    <span className="rounded-full border border-black/8 bg-[#f7f8fa] px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-[#667781]">
+                    <span className="rounded-full border border-black/8 bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-[#667781]">
                       chave {entry?.key ?? config.promptKey}
                     </span>
                     <span className="rounded-full bg-[#111b21] px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-white">
@@ -518,18 +529,9 @@ function AgentPromptPanel({ config }: { config: AgentPromptConfig }) {
         </div>
       </section>
 
-      <section className="flex flex-col gap-5">
+      <section className="flex flex-col gap-5 xl:sticky xl:top-5 xl:self-start">
         <div className="rounded-[28px] border border-black/8 bg-white p-5 shadow-[0_20px_50px_rgba(17,27,33,0.06)]">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[#667781]">Painel de controle</p>
-          <div className="mt-4 grid gap-3">
-            <StatBox label="Prompt key" value={config.promptKey} />
-            <StatBox label="Versoes publicadas" value={String(entry?.versions.length ?? 0)} />
-            <StatBox label="Versao ativa" value={activeVersion ? `V${activeVersion.version_number}` : 'Nao definida'} />
-          </div>
-        </div>
-
-        <div className="rounded-[28px] border border-black/8 bg-white p-5 shadow-[0_20px_50px_rgba(17,27,33,0.06)]">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[#667781]">Modo operacional</p>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[#667781]">Acoes e regras</p>
           <ul className="mt-4 space-y-3 text-sm leading-6 text-[#3b4a54]">
             <li>Editar nunca sobrescreve a versao anterior; sempre gera uma nova versao a partir da selecionada.</li>
             <li>A ativacao muda o prompt usado no runtime do agente correspondente.</li>
@@ -575,11 +577,11 @@ function Banner({
   )
 }
 
-function StatBox({ label, value }: { label: string; value: string }) {
+function StatRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl border border-black/8 bg-[#f7f8fa] px-4 py-3">
-      <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#667781]">{label}</p>
-      <p className="mt-1 break-words text-sm font-semibold text-[#111b21]">{value}</p>
+    <div className="flex items-baseline justify-between gap-3 border-b border-black/6 pb-2 last:border-b-0 last:pb-0">
+      <span className="text-xs font-medium uppercase tracking-[0.16em] text-[#667781]">{label}</span>
+      <span className="text-sm font-semibold text-[#111b21]">{value}</span>
     </div>
   )
 }
