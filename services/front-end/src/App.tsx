@@ -57,16 +57,13 @@ function App() {
               onChatScroll={workspace.handleChatScroll}
               isLoadingThread={workspace.isLoadingThread}
               activeMessages={workspace.activeMessages}
-              draft={workspace.draft}
-              onDraftChange={workspace.setDraft}
-              onDraftKeyDown={workspace.handleComposerKeyDown}
               isBootstrapping={workspace.isBootstrapping}
               isSending={workspace.isSending}
               hasActiveThread={Boolean(workspace.activeThreadId)}
-              onSend={() => {
-                void workspace.sendMessage()
+              credits={workspace.credits}
+              onSend={(content) => {
+                void workspace.sendMessage(content)
               }}
-              composerDisabled={workspace.composerDisabled}
             />
           </section>
         )}

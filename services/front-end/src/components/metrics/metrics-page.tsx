@@ -613,7 +613,7 @@ export function MetricsPage({ apiKey }: { apiKey: string }) {
                       Sessões avaliadas
                     </span>
                     <span className="text-4xl font-bold tabular-nums text-[#111b21]">{ev.total_evaluated}</span>
-                    <span className="text-xs text-[#667781]">avaliações heurísticas</span>
+                    <span className="text-xs text-[#667781]">avaliações agentica</span>
                   </div>
                   <div className="flex flex-col justify-center gap-2 rounded-2xl border border-black/6 p-5">
                     <span className="text-xs font-medium uppercase tracking-wider text-[#667781]">Interpretação</span>

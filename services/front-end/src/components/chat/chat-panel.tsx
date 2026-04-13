@@ -1,4 +1,4 @@
-import type { KeyboardEventHandler, RefObject } from 'react'
+import { memo, useState, type KeyboardEvent, type RefObject } from 'react'
 
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
@@ -17,15 +17,73 @@ type ChatPanelProps = {
   onChatScroll: () => void
   isLoadingThread: boolean
   activeMessages: Message[]
-  draft: string
-  onDraftChange: (value: string) => void
-  onDraftKeyDown: KeyboardEventHandler<HTMLTextAreaElement>
   isBootstrapping: boolean
   isSending: boolean
   hasActiveThread: boolean
-  onSend: () => void
-  composerDisabled: boolean
+  credits: number | null
+  onSend: (content: string) => void
 }
+
+type MessageComposerProps = {
+  isBootstrapping: boolean
+  isSending: boolean
+  hasActiveThread: boolean
+  credits: number | null
+  onSend: (content: string) => void
+}
+
+const MessageComposer = memo(function MessageComposer({
+  isBootstrapping,
+  isSending,
+  hasActiveThread,
+  credits,
+  onSend,
+}: MessageComposerProps) {
+  const [draft, setDraft] = useState('')
+
+  const canSend = Boolean(draft.trim()) && hasActiveThread && !isBootstrapping && !isSending && credits !== 0
+
+  const handleSend = () => {
+    const content = draft.trim()
+    if (!content || !canSend) return
+    setDraft('')
+    onSend(content)
+  }
+
+  const handleKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault()
+      handleSend()
+    }
+  }
+
+  return (
+    <div className="border-t border-black/8 bg-[#f0f2f5] px-4 py-3">
+      <div className="mx-auto flex max-w-4xl items-end gap-3">
+        <div className="flex min-h-14 flex-1 items-center rounded-lg bg-white px-3">
+          <textarea
+            value={draft}
+            onChange={(event) => setDraft(event.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Type a message"
+            className="min-h-10 flex-1 resize-none bg-transparent py-3 text-sm text-[#111b21] outline-none placeholder:text-[#8696a0]"
+            autoComplete="off"
+            disabled={isBootstrapping || isSending || !hasActiveThread}
+          />
+        </div>
+
+        <Button
+          type="button"
+          onClick={handleSend}
+          disabled={!canSend}
+          className="size-11 rounded-full bg-[#00a884] text-white hover:bg-[#0dc39a]"
+        >
+          <SendHorizontal className="size-5" />
+        </Button>
+      </div>
+    </div>
+  )
+})
 
 export function ChatPanel({
   activeThreadInitials,
@@ -37,14 +95,11 @@ export function ChatPanel({
   onChatScroll,
   isLoadingThread,
   activeMessages,
-  draft,
-  onDraftChange,
-  onDraftKeyDown,
   isBootstrapping,
   isSending,
   hasActiveThread,
+  credits,
   onSend,
-  composerDisabled,
 }: ChatPanelProps) {
   return (
     <div className="flex min-h-0 flex-col bg-[#efeae2]">
@@ -126,30 +181,13 @@ export function ChatPanel({
         </div>
       </div>
 
-      <div className="border-t border-black/8 bg-[#f0f2f5] px-4 py-3">
-        <div className="mx-auto flex max-w-4xl items-end gap-3">
-          <div className="flex min-h-14 flex-1 items-center rounded-lg bg-white px-3">
-            <textarea
-              value={draft}
-              onChange={(event) => onDraftChange(event.target.value)}
-              onKeyDown={onDraftKeyDown}
-              placeholder="Type a message"
-              className="min-h-10 flex-1 resize-none bg-transparent py-3 text-sm text-[#111b21] outline-none placeholder:text-[#8696a0]"
-              autoComplete="off"
-              disabled={isBootstrapping || isSending || !hasActiveThread}
-            />
-          </div>
-
-          <Button
-            type="button"
-            onClick={onSend}
-            disabled={composerDisabled}
-            className="size-11 rounded-full bg-[#00a884] text-white hover:bg-[#0dc39a]"
-          >
-            <SendHorizontal className="size-5" />
-          </Button>
-        </div>
-      </div>
+      <MessageComposer
+        isBootstrapping={isBootstrapping}
+        isSending={isSending}
+        hasActiveThread={hasActiveThread}
+        credits={credits}
+        onSend={onSend}
+      />
     </div>
   )
 }

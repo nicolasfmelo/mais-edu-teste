@@ -316,7 +316,7 @@ export function useActiveThreadLoader(params: {
 }
 
 export async function sendChatMessage(params: {
-  draft: string
+  content: string
   activeThreadId: string | null
   credits: number | null
   isSending: boolean
@@ -329,13 +329,12 @@ export async function sendChatMessage(params: {
   setErrorMessage: SetErrorMessage
   setMessagesByThread: SetMessagesByThread
   setThreads: SetThreads
-  setDraft: SetState<string>
   setIsSending: SetState<boolean>
   setLoadedThreadIds: SetLoadedThreadIds
   setCredits: SetState<number | null>
 }) {
   const {
-    draft,
+    content,
     activeThreadId,
     credits,
     isSending,
@@ -348,12 +347,10 @@ export async function sendChatMessage(params: {
     setErrorMessage,
     setMessagesByThread,
     setThreads,
-    setDraft,
     setIsSending,
     setLoadedThreadIds,
     setCredits,
   } = params
-  const content = draft.trim()
   const threadId = activeThreadId
 
   if (!content || isCreditsDepleted(credits) || !threadId || isSending) {
@@ -380,7 +377,6 @@ export async function sendChatMessage(params: {
   setErrorMessage(null)
   setMessagesByThread((current) => appendMessageToThread(current, threadId, userMessage))
   setThreads((current) => updateThreadAfterUserMessage(current, { threadId, content, time }))
-  setDraft('')
   setIsSending(true)
 
   try {
@@ -415,7 +411,6 @@ export async function sendChatMessage(params: {
   } catch (error) {
     setMessagesByThread((current) => replaceThreadMessages(current, threadId, previousMessages))
     setThreads(previousThreads)
-    setDraft(content)
     setErrorMessage(getErrorMessage(error, 'Nao foi possivel enviar a mensagem.'))
   } finally {
     setIsSending(false)
@@ -468,10 +463,11 @@ export async function createWorkspaceThread(params: {
 
 export function handleComposerEnter(
   event: KeyboardEvent<HTMLTextAreaElement>,
-  sendMessage: () => Promise<void>,
+  sendMessage: (content: string) => Promise<void>,
+  content: string,
 ) {
   if (event.key === 'Enter' && !event.shiftKey) {
     event.preventDefault()
-    void sendMessage()
+    void sendMessage(content)
   }
 }

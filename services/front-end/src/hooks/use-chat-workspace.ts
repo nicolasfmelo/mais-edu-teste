@@ -1,8 +1,7 @@
-import { useMemo, useRef, useState, type KeyboardEvent } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import {
   buildThreadInitials,
   infoBannerMessages,
-  isComposerDisabled,
   randomModelOption,
   type Message,
   type ModelOption,
@@ -10,7 +9,6 @@ import {
 } from '@/lib/chat-ui'
 import {
   createWorkspaceThread,
-  handleComposerEnter,
   sendChatMessage,
   syncAutoScrollPreference,
   useActiveThreadLoader,
@@ -30,7 +28,6 @@ export function useChatWorkspace() {
   const [threads, setThreads] = useState<Thread[]>([])
   const [messagesByThread, setMessagesByThread] = useState<Record<string, Message[]>>({})
   const [activeThreadId, setActiveThreadId] = useState<string | null>(null)
-  const [draft, setDraft] = useState('')
   const [modelMenuOpen, setModelMenuOpen] = useState(false)
   const [infoBannerIndex, setInfoBannerIndex] = useState(0)
   const [loadedThreadIds, setLoadedThreadIds] = useState<Record<string, boolean>>({})
@@ -61,13 +58,6 @@ export function useChatWorkspace() {
   const activeMessages = activeThreadId ? (messagesByThread[activeThreadId] ?? []) : []
   const activeThreadName = activeThread?.name ?? 'Carregando conversa'
   const activeThreadInitials = buildThreadInitials(activeThreadName)
-  const composerDisabled = isComposerDisabled({
-    draft,
-    credits,
-    isBootstrapping,
-    isSending,
-    activeThreadId,
-  })
 
   const handleChatScroll = () => syncAutoScrollPreference(chatScrollRef, shouldAutoScrollRef)
 
@@ -106,9 +96,9 @@ export function useChatWorkspace() {
     setLoadedThreadIds,
   })
 
-  const sendMessage = () =>
+  const sendMessage = (content: string) =>
     sendChatMessage({
-      draft,
+      content,
       activeThreadId,
       credits,
       isSending,
@@ -121,7 +111,6 @@ export function useChatWorkspace() {
       setErrorMessage,
       setMessagesByThread,
       setThreads,
-      setDraft,
       setIsSending,
       setLoadedThreadIds,
       setCredits,
@@ -138,9 +127,6 @@ export function useChatWorkspace() {
       setActiveThreadId,
     })
 
-  const handleComposerKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) =>
-    handleComposerEnter(event, sendMessage)
-
   return {
     activeModel,
     activeMessages,
@@ -150,12 +136,9 @@ export function useChatWorkspace() {
     apiKey,
     apiKeyModalOpen,
     chatScrollRef,
-    composerDisabled,
     credits,
-    draft,
     errorMessage,
     handleChatScroll,
-    handleComposerKeyDown,
     infoBannerMessage: infoBannerMessages[infoBannerIndex],
     isBootstrapping,
     isCreatingThread,
@@ -173,7 +156,6 @@ export function useChatWorkspace() {
     selectThread: setActiveThreadId,
     sendMessage,
     setApiKey,
-    setDraft,
     toggleModelMenu: () => setModelMenuOpen((current) => !current),
     threads,
   }
