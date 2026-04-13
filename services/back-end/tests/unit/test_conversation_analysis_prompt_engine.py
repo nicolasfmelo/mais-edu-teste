@@ -15,11 +15,12 @@ def test_build_analysis_prompt_uses_typed_exported_session() -> None:
         ),
     )
 
-    prompt = build_analysis_prompt(session)
+    prompt = build_analysis_prompt(session, "Voce e um avaliador especializado.")
 
     assert f"Session ID: {session.session_id}" in prompt
     assert "[USER]: Quero saber sobre o MBA." in prompt
     assert "[ASSISTANT]: Posso explicar as opcoes." in prompt
+    assert "Voce e um avaliador especializado." in prompt
 
 
 def test_parse_analysis_response_returns_typed_model() -> None:

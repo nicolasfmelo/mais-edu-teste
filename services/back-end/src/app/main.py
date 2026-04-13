@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from contextlib import asynccontextmanager
-
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -17,6 +15,7 @@ from app.domain_models.common.exceptions import (
     LLMProxyModelNotAllowedError,
     LLMProxyUnauthorizedError,
 )
+from app.domain_models.prompt.exceptions import PromptAlreadyExistsError, PromptRegistryEntryNotFoundError
 
 
 def _resolve_cors_origins(container: object) -> list[str]:
@@ -27,14 +26,9 @@ def _resolve_cors_origins(container: object) -> list[str]:
 
 def create_application(container: AppContainer | None = None) -> FastAPI:
     app_container = container or AppContainer()
-
-    @asynccontextmanager
-    async def lifespan(application: FastAPI):
-        app_container.startup()
-        application.state.container = app_container
-        yield
-
-    application = FastAPI(title="Mais A Educ Backend", version="0.1.0", lifespan=lifespan)
+    app_container.startup()
+    application = FastAPI(title="Mais A Educ Backend", version="0.1.0")
+    application.state.container = app_container
     application.add_middleware(
         CORSMiddleware,
         allow_origins=_resolve_cors_origins(app_container),
@@ -47,6 +41,8 @@ def create_application(container: AppContainer | None = None) -> FastAPI:
     application.add_exception_handler(LLMProxyModelNotAllowedError, _handle_invalid_model_llm_error)
     application.add_exception_handler(LLMProxyConfigurationError, _handle_configuration_llm_error)
     application.add_exception_handler(LLMProxyInvocationError, _handle_invoke_llm_error)
+    application.add_exception_handler(PromptRegistryEntryNotFoundError, _handle_prompt_not_found_error)
+    application.add_exception_handler(PromptAlreadyExistsError, _handle_prompt_conflict_error)
     application.add_exception_handler(BackendDomainError, _handle_backend_domain_error)
     application.add_exception_handler(ConversationExportError, _handle_conversation_export_error)
     application.add_exception_handler(ConversationAnalysisError, _handle_conversation_analysis_error)
@@ -72,6 +68,14 @@ async def _handle_configuration_llm_error(_: Request, exc: LLMProxyConfiguration
 
 async def _handle_invoke_llm_error(_: Request, exc: LLMProxyInvocationError) -> JSONResponse:
     return JSONResponse(status_code=502, content={"error": str(exc)})
+
+
+async def _handle_prompt_not_found_error(_: Request, exc: PromptRegistryEntryNotFoundError) -> JSONResponse:
+    return JSONResponse(status_code=404, content={"error": str(exc)})
+
+
+async def _handle_prompt_conflict_error(_: Request, exc: PromptAlreadyExistsError) -> JSONResponse:
+    return JSONResponse(status_code=409, content={"error": str(exc)})
 
 
 async def _handle_backend_domain_error(_: Request, exc: BackendDomainError) -> JSONResponse:

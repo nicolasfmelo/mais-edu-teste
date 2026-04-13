@@ -12,6 +12,7 @@ from app.engines.evaluation.conversation_analysis_parser_engine import parse_ses
 from app.engines.evaluation.conversation_analysis_prompt_engine import build_analysis_prompt, parse_analysis_response
 from app.engines.evaluation.prompt_injection_detector_engine import detect_injection
 from app.integrations.langgraph.state_payload_adapter import LangGraphStatePayloadAdapter
+from app.services.prompt.agent_prompt_service import AgentPromptService
 
 
 @dataclass(frozen=True)
@@ -42,9 +43,11 @@ class LangGraphConversationAnalysisAgent:
         self,
         conversation_reader: ConversationSessionSource,
         ai_gateway_client: AIGatewayClient,
+        agent_prompt_service: AgentPromptService,
     ) -> None:
         self._conversation_reader = conversation_reader
         self._ai_gateway_client = ai_gateway_client
+        self._agent_prompt_service = agent_prompt_service
         self._payload_adapter = LangGraphStatePayloadAdapter(
             ConversationAnalysisGraphState,
             "conversation analysis graph state",
@@ -80,7 +83,7 @@ class LangGraphConversationAnalysisAgent:
         model_id: str | None,
     ) -> SessionEvaluation:
         heuristic_detected, heuristic_snippets = detect_injection(session.messages)
-        prompt = build_analysis_prompt(session)
+        prompt = build_analysis_prompt(session, self._agent_prompt_service.get_nps_system_prompt())
         request = GatewayPromptRequest(
             api_key=api_key,
             idempotency_key=f"analysis-{session.session_id}",

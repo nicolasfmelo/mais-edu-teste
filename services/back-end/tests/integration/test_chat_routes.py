@@ -6,8 +6,6 @@ from app.bootstrap.container import AppContainer
 from app.bootstrap.settings import AppSettings
 from app.domain_models.agent.models import GatewayPromptReply
 from app.main import create_application
-
-
 def test_chat_routes_support_listing_loading_and_sending_messages(tmp_path: Path) -> None:
     container = AppContainer(
         settings=AppSettings(

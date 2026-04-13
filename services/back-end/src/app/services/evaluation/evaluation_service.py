@@ -8,6 +8,7 @@ from app.domain_models.evaluation.models import EvaluationsSummary, ExportedConv
 from app.engines.evaluation.conversation_analysis_prompt_engine import build_analysis_prompt
 from app.engines.evaluation.evaluations_summary_engine import EvaluationsSummaryEngine
 from app.engines.evaluation.session_evaluation_engine import SessionEvaluationEngine
+from app.services.prompt.agent_prompt_service import AgentPromptService
 
 
 class EvaluationService:
@@ -17,11 +18,13 @@ class EvaluationService:
         evaluation_engine: SessionEvaluationEngine,
         evaluations_summary_engine: EvaluationsSummaryEngine,
         agent_evaluation_repository: AgentEvaluationRepository,
+        agent_prompt_service: AgentPromptService,
     ) -> None:
         self._session_repository = session_repository
         self._evaluation_engine = evaluation_engine
         self._evaluations_summary_engine = evaluations_summary_engine
         self._agent_evaluation_repository = agent_evaluation_repository
+        self._agent_prompt_service = agent_prompt_service
 
     def evaluate_session(self, session_id: SessionId) -> SessionEvaluation:
         session = self._session_repository.find_by_id(session_id)
@@ -48,7 +51,10 @@ class EvaluationService:
         if evaluation is None:
             raise EvaluationNotFoundError(f"Agent evaluation not found for session {session_id.value}")
         chat_session = self._session_repository.find_by_id(session_id)
-        prompt_used = build_analysis_prompt(ExportedConversationSession.from_chat_session(chat_session))
+        prompt_used = build_analysis_prompt(
+            ExportedConversationSession.from_chat_session(chat_session),
+            self._agent_prompt_service.get_nps_system_prompt(),
+        )
         return evaluation, chat_session, prompt_used
 
     def _evaluate(self, session: ChatSession) -> SessionEvaluation:

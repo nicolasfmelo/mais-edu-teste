@@ -49,6 +49,7 @@ from app.services.indexing.course_catalog_bootstrap_service import CourseCatalog
 from app.services.indexing.indexer_service import IndexerService
 from app.services.agent.assistant_catalog_service import AssistantCatalogService
 from app.services.metrics.metrics_service import MetricsService
+from app.services.prompt.agent_prompt_service import AgentPromptService
 from app.services.prompt.prompt_registry_service import PromptRegistryService
 from app.services.rag.rag_service import RagService
 
@@ -82,6 +83,7 @@ def _build_assistant_models(settings: AppSettings) -> tuple[AssistantModel, ...]
 
 class AppContainer:
     def __init__(self, settings: AppSettings | None = None) -> None:
+        self._started = False
         self._settings = settings or AppSettings.from_env()
         self._database = SQLAlchemyDatabase(self._settings.database_url)
         self._session_repository = SQLAlchemySessionRepository(self._database)
@@ -136,6 +138,13 @@ class AppContainer:
         self._agent_service = AgentService(
             course_agent=self._course_agent,
         )
+        self._prompt_registry_service = PromptRegistryService(
+            prompt_registry_repository=self._prompt_registry_repository,
+            prompt_engine=self._prompt_engine,
+        )
+        self._agent_prompt_service = AgentPromptService(
+            prompt_registry_service=self._prompt_registry_service,
+        )
         self._assistant_catalog_service = AssistantCatalogService(
             credit_balance_client=self._ai_gateway_client,
             assistant_models=self._assistant_models,
@@ -148,6 +157,7 @@ class AppContainer:
             session_repository=self._session_repository,
             agent_service=self._agent_service,
             metrics_service=self._metrics_service,
+            agent_prompt_service=self._agent_prompt_service,
         )
         self._indexer_service = IndexerService(
             knowledge_repository=self._knowledge_repository,
@@ -159,10 +169,7 @@ class AppContainer:
             evaluation_engine=self._evaluation_engine,
             evaluations_summary_engine=self._evaluations_summary_engine,
             agent_evaluation_repository=self._agent_evaluation_repository,
-        )
-        self._prompt_registry_service = PromptRegistryService(
-            prompt_registry_repository=self._prompt_registry_repository,
-            prompt_engine=self._prompt_engine,
+            agent_prompt_service=self._agent_prompt_service,
         )
         self._conversation_export_service = ConversationExportService(
             session_repository=self._session_repository,
@@ -172,6 +179,7 @@ class AppContainer:
         self._conversation_analysis_agent = LangGraphConversationAnalysisAgent(
             conversation_reader=self._conversation_reader,
             ai_gateway_client=self._ai_gateway_client,
+            agent_prompt_service=self._agent_prompt_service,
         )
         self._conversation_analysis_service = ConversationAnalysisService(
             analysis_agent=self._conversation_analysis_agent,
@@ -209,7 +217,11 @@ class AppContainer:
         return router
 
     def startup(self) -> None:
+        if self._started:
+            return
         self._database.create_schema()
+        self._agent_prompt_service.ensure_default_prompts()
+        self._started = True
         if not self._settings.indexing_bootstrap_enabled:
             logger.info("Skipping course catalog bootstrap because startup indexing is disabled.")
             return

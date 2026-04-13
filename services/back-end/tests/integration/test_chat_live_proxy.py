@@ -10,8 +10,6 @@ from fastapi.testclient import TestClient
 from app.bootstrap.container import AppContainer
 from app.bootstrap.settings import AppSettings
 from app.main import create_application
-
-
 @pytest.mark.integration
 def test_chat_messages_route_can_call_live_llm_proxy(tmp_path) -> None:  # noqa: ANN001
     api_key = os.getenv("LLM_PROXY_TEST_API_KEY")

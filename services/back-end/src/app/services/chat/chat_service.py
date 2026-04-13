@@ -7,6 +7,7 @@ from app.domain_models.common.ids import MessageId, SessionId
 from app.domain_models.metrics.models import ConversationMetrics
 from app.services.agent.agent_service import AgentService
 from app.services.metrics.metrics_service import MetricsService
+from app.services.prompt.agent_prompt_service import AgentPromptService
 
 
 class ChatService:
@@ -15,10 +16,12 @@ class ChatService:
         session_repository: SessionRepository,
         agent_service: AgentService,
         metrics_service: MetricsService,
+        agent_prompt_service: AgentPromptService,
     ) -> None:
         self._session_repository = session_repository
         self._agent_service = agent_service
         self._metrics_service = metrics_service
+        self._agent_prompt_service = agent_prompt_service
 
     def handle_message(self, chat_request: ChatRequest) -> ChatResponse:
         session = self._session_repository.get_or_create(chat_request.session_id)
@@ -33,7 +36,7 @@ class ChatService:
                 latest_user_message=chat_request.message.content,
                 conversation_messages=session_with_user_message.messages,
                 model_id=chat_request.model_id,
-                system_prompt=chat_request.system_prompt,
+                system_prompt=chat_request.system_prompt or self._agent_prompt_service.get_chat_system_prompt(),
             ),
         )
 
