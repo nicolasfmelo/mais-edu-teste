@@ -22,6 +22,7 @@ import {
 export function useChatWorkspace() {
   const [activeModelId, setActiveModelId] = useState<string | null>(null)
   const [apiKey, setApiKey] = useState('')
+  const [apiKeyDraft, setApiKeyDraft] = useState('')
   const [apiKeyModalOpen, setApiKeyModalOpen] = useState(false)
   const [credits, setCredits] = useState<number | null>(null)
   const [assistantModelOptions, setAssistantModelOptions] = useState<ModelOption[]>([])
@@ -134,6 +135,7 @@ export function useChatWorkspace() {
     activeThreadInitials,
     activeThreadName,
     apiKey,
+    apiKeyDraft,
     apiKeyModalOpen,
     chatScrollRef,
     credits,
@@ -147,15 +149,25 @@ export function useChatWorkspace() {
     modelMenuOpen,
     modelOptions,
     createThread,
-    openApiKeyModal: () => setApiKeyModalOpen(true),
-    closeApiKeyModal: () => setApiKeyModalOpen(false),
+    openApiKeyModal: () => {
+      setApiKeyDraft(apiKey)
+      setApiKeyModalOpen(true)
+    },
+    closeApiKeyModal: () => {
+      setApiKeyDraft(apiKey)
+      setApiKeyModalOpen(false)
+    },
+    saveApiKey: () => {
+      setApiKey(apiKeyDraft)
+      setApiKeyModalOpen(false)
+    },
     selectModel: (modelId: string) => {
       setActiveModelId(modelId)
       setModelMenuOpen(false)
     },
     selectThread: setActiveThreadId,
     sendMessage,
-    setApiKey,
+    setApiKeyDraft,
     toggleModelMenu: () => setModelMenuOpen((current) => !current),
     threads,
   }

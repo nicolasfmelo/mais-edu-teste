@@ -110,8 +110,9 @@ function App() {
 
       {workspace.apiKeyModalOpen ? (
         <ApiKeyModal
-          apiKey={workspace.apiKey}
-          onChangeApiKey={workspace.setApiKey}
+          apiKey={workspace.apiKeyDraft}
+          onChangeApiKey={workspace.setApiKeyDraft}
+          onSave={workspace.saveApiKey}
           onClose={workspace.closeApiKeyModal}
         />
       ) : null}

@@ -2,7 +2,7 @@ import { memo, useState, type KeyboardEvent, type RefObject } from 'react'
 
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
-import { CheckCheck, CircleAlert, MoreVertical, Search, SendHorizontal } from 'lucide-react'
+import { CheckCheck, CircleAlert, LoaderCircle, SendHorizontal } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import type { Message } from '@/lib/chat-ui'
@@ -59,12 +59,15 @@ const MessageComposer = memo(function MessageComposer({
 
   return (
     <div className="border-t border-black/8 bg-[#f0f2f5] px-4 py-3">
-      <div className="mx-auto flex max-w-4xl items-end gap-3">
-        <div className="flex min-h-14 flex-1 items-center rounded-lg bg-white px-3">
-          <textarea
-            value={draft}
-            onChange={(event) => setDraft(event.target.value)}
-            onKeyDown={handleKeyDown}
+        <div className="mx-auto flex max-w-4xl items-end gap-3">
+          <div className="flex min-h-14 flex-1 items-center rounded-lg bg-white px-3">
+            <textarea
+              id="chat-message-input"
+              name="message"
+              aria-label="Mensagem do chat"
+              value={draft}
+              onChange={(event) => setDraft(event.target.value)}
+              onKeyDown={handleKeyDown}
             placeholder="Type a message"
             className="min-h-10 flex-1 resize-none bg-transparent py-3 text-sm text-[#111b21] outline-none placeholder:text-[#8696a0]"
             autoComplete="off"
@@ -76,9 +79,10 @@ const MessageComposer = memo(function MessageComposer({
           type="button"
           onClick={handleSend}
           disabled={!canSend}
+          aria-label={isSending ? 'Enviando mensagem' : 'Enviar mensagem'}
           className="size-11 rounded-full bg-[#00a884] text-white hover:bg-[#0dc39a]"
         >
-          <SendHorizontal className="size-5" />
+          {isSending ? <LoaderCircle className="size-5 animate-spin" /> : <SendHorizontal className="size-5" />}
         </Button>
       </div>
     </div>
@@ -115,14 +119,12 @@ export function ChatPanel({
             </div>
           </div>
 
-          <div className="flex items-center gap-2 text-[#54656f]">
-            <Button type="button" variant="ghost" size="icon-sm" className="rounded-full hover:bg-black/5">
-              <Search className="size-4" />
-            </Button>
-            <Button type="button" variant="ghost" size="icon-sm" className="rounded-full hover:bg-black/5">
-              <MoreVertical className="size-4" />
-            </Button>
-          </div>
+          {isSending ? (
+            <div className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-xs font-medium text-[#54656f] shadow-sm">
+              <LoaderCircle className="size-3.5 animate-spin" />
+              Clara está respondendo
+            </div>
+          ) : null}
         </div>
       </div>
 

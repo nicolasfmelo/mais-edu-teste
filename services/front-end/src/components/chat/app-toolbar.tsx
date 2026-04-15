@@ -85,6 +85,7 @@ export function AppToolbar({
             size="icon"
             onClick={onCreateThread}
             disabled={isBootstrapping || isCreatingThread}
+            aria-label="Nova conversa"
             className="rounded-full border-black/8 bg-white text-[#111b21] hover:bg-[#f5f6f6]"
           >
             <Plus className="size-4" />

@@ -1,6 +1,4 @@
-import { MessageSquareText, MoreVertical, Search } from 'lucide-react'
-
-import { Button } from '@/components/ui/button'
+import { Search } from 'lucide-react'
 import { buildThreadInitials, type Thread } from '@/lib/chat-ui'
 
 type ThreadSidebarProps = {
@@ -22,14 +20,7 @@ export function ThreadSidebar({
         <div className="flex size-10 items-center justify-center rounded-full bg-[#dfe5e7] text-sm font-semibold text-[#111b21]">
           TE
         </div>
-        <div className="flex items-center gap-2 text-[#54656f]">
-          <Button type="button" variant="ghost" size="icon-sm" className="rounded-full hover:bg-black/5">
-            <MessageSquareText className="size-4" />
-          </Button>
-          <Button type="button" variant="ghost" size="icon-sm" className="rounded-full hover:bg-black/5">
-            <MoreVertical className="size-4" />
-          </Button>
-        </div>
+        <span className="text-xs font-medium uppercase tracking-[0.14em] text-[#667781]">Conversas</span>
       </div>
 
       <div className="border-b border-black/6 bg-[#f0f2f5] px-3 py-3">
