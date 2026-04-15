@@ -103,6 +103,9 @@ function App() {
               onSend={(content) => {
                 void workspace.sendMessage(content)
               }}
+              onSendAudio={(audio) => {
+                void workspace.sendAudioMessage(audio)
+              }}
             />
           </section>
         )}

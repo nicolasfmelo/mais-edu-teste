@@ -32,6 +32,7 @@ from app.integrations.database.repos.sqlalchemy_session_repository import SQLAlc
 from app.integrations.database.sqlalchemy_database import SQLAlchemyDatabase
 from app.integrations.external_apis.llm_proxy_gateway_client import LLMProxyGatewayClient
 from app.integrations.llm_providers.fake_embedding_client import FakeEmbeddingClient
+from app.integrations.llm_providers.onnx_whisper_audio_transcriber import OnnxWhisperAudioTranscriber
 from app.integrations.local_files.course_catalog_document_source import CourseCatalogDocumentSource
 from app.integrations.local_files.markdown_institution_profile_source import MarkdownInstitutionProfileSource
 from app.integrations.object_store.minio_conversation_export_store import MinioConversationExportStore
@@ -43,6 +44,7 @@ from app.services.chat.conversation_export_service import ConversationExportServ
 from app.services.evaluation.conversation_analysis_service import ConversationAnalysisService
 from app.services.evaluation.langgraph_conversation_analysis_agent import LangGraphConversationAnalysisAgent
 from app.services.chat.chat_service import ChatService
+from app.services.chat.chat_audio_service import ChatAudioService
 from app.services.indexing.course_catalog_knowledge_bootstrap_service import CourseCatalogKnowledgeBootstrapService
 from app.services.evaluation.evaluation_service import EvaluationService
 from app.services.indexing.course_catalog_bootstrap_service import CourseCatalogBootstrapService
@@ -105,6 +107,12 @@ class AppContainer:
             bucket=self._settings.minio_export_bucket,
         )
         self._embedding_client = FakeEmbeddingClient()
+        self._audio_transcriber = OnnxWhisperAudioTranscriber(
+            model_dir=self._settings.whisper_model_path,
+            default_language=self._settings.whisper_default_language,
+            model_download_url=self._settings.whisper_model_download_url,
+            auto_download_enabled=self._settings.whisper_model_auto_download_enabled,
+        )
         self._ai_gateway_client = LLMProxyGatewayClient(base_url=self._settings.llm_proxy_base_url or "")
         self._assistant_models = _build_assistant_models(self._settings)
         self._institution_profile_source = MarkdownInstitutionProfileSource(
@@ -159,6 +167,10 @@ class AppContainer:
             metrics_service=self._metrics_service,
             agent_prompt_service=self._agent_prompt_service,
         )
+        self._chat_audio_service = ChatAudioService(
+            chat_service=self._chat_service,
+            audio_transcriber=self._audio_transcriber,
+        )
         self._indexer_service = IndexerService(
             knowledge_repository=self._knowledge_repository,
             document_store=self._document_store,
@@ -207,7 +219,13 @@ class AppContainer:
     def build_router(self) -> APIRouter:
         router = APIRouter()
         router.include_router(AssistantCatalogHandler(assistant_catalog_service=self._assistant_catalog_service).router)
-        router.include_router(ChatHandler(chat_service=self._chat_service).router)
+        router.include_router(
+            ChatHandler(
+                chat_service=self._chat_service,
+                chat_audio_service=self._chat_audio_service,
+                max_audio_bytes=self._settings.chat_audio_max_bytes,
+            ).router
+        )
         router.include_router(IndexingHandler(indexer_service=self._indexer_service).router)
         router.include_router(MetricsHandler(metrics_service=self._metrics_service, metrics_job_repository=self._metrics_job_repository).router)
         router.include_router(EvaluationHandler(evaluation_service=self._evaluation_service).router)

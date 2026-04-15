@@ -5,7 +5,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field
 
-from app.domain_models.chat.models import ChatMessage, ChatRequest, ChatResponse, ChatSession, MessageRole
+from app.domain_models.chat.models import ChatAudioResponse, ChatMessage, ChatRequest, ChatResponse, ChatSession, MessageRole
 from app.domain_models.common.ids import MessageId, SessionId
 
 
@@ -57,6 +57,19 @@ class ChatMessageResponseSchema(BaseModel):
             session_id=response.session_id.value,
             reply=response.reply.content,
             assistant_message=ChatSessionMessageSchema.from_domain(response.reply),
+        )
+
+
+class ChatAudioMessageResponseSchema(ChatMessageResponseSchema):
+    transcription: str
+
+    @classmethod
+    def from_domain(cls, response: ChatAudioResponse) -> "ChatAudioMessageResponseSchema":
+        return cls(
+            session_id=response.session_id.value,
+            reply=response.reply.content,
+            assistant_message=ChatSessionMessageSchema.from_domain(response.reply),
+            transcription=response.transcription,
         )
 
 

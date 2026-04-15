@@ -51,6 +51,25 @@ class ChatRequest:
 
 
 @dataclass(frozen=True)
+class ChatAudioRequest:
+    session_id: SessionId
+    audio_bytes: bytes
+    audio_filename: str
+    api_key: str
+    audio_content_type: str | None = None
+    language: str | None = None
+    model_id: str | None = None
+    system_prompt: str | None = None
+
+
+@dataclass(frozen=True)
 class ChatResponse:
     session_id: SessionId
+    reply: ChatMessage
+
+
+@dataclass(frozen=True)
+class ChatAudioResponse:
+    session_id: SessionId
+    transcription: str
     reply: ChatMessage

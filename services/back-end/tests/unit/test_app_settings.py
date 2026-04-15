@@ -68,3 +68,31 @@ def test_from_env_accepts_legacy_minio_bucket_name() -> None:
         settings = AppSettings.from_env()
 
     assert settings.minio_export_bucket == "mais-a-educ"
+
+
+def test_from_env_uses_default_whisper_download_settings() -> None:
+    with pytest.MonkeyPatch.context() as monkeypatch:
+        monkeypatch.setenv("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/mais_a_educ")
+        monkeypatch.setenv("MINIO_ACCESS_KEY", "test-key")
+        monkeypatch.setenv("MINIO_SECRET_KEY", "test-secret")
+        monkeypatch.delenv("WHISPER_MODEL_DOWNLOAD_URL", raising=False)
+        monkeypatch.delenv("WHISPER_MODEL_AUTO_DOWNLOAD_ENABLED", raising=False)
+
+        settings = AppSettings.from_env()
+
+    assert settings.whisper_model_download_url.startswith("https://drive.google.com/drive/folders/")
+    assert settings.whisper_model_auto_download_enabled is True
+
+
+def test_from_env_allows_overriding_whisper_download_settings() -> None:
+    with pytest.MonkeyPatch.context() as monkeypatch:
+        monkeypatch.setenv("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/mais_a_educ")
+        monkeypatch.setenv("MINIO_ACCESS_KEY", "test-key")
+        monkeypatch.setenv("MINIO_SECRET_KEY", "test-secret")
+        monkeypatch.setenv("WHISPER_MODEL_DOWNLOAD_URL", "https://example.com/model-folder")
+        monkeypatch.setenv("WHISPER_MODEL_AUTO_DOWNLOAD_ENABLED", "false")
+
+        settings = AppSettings.from_env()
+
+    assert settings.whisper_model_download_url == "https://example.com/model-folder"
+    assert settings.whisper_model_auto_download_enabled is False

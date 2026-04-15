@@ -18,6 +18,12 @@ def _as_tuple(value: str | None, default: tuple[str, ...]) -> tuple[str, ...]:
     return items or default
 
 
+def _as_int(value: str | None, default: int) -> int:
+    if value is None:
+        return default
+    return int(value.strip())
+
+
 def _default_institution_profile_path() -> Path:
     repo_root = Path(__file__).resolve().parents[5]
     return repo_root / "services" / "back-end" / "institution-profile.md"
@@ -30,6 +36,15 @@ def _default_assistant_model_allowlist() -> tuple[str, ...]:
         "minimax.minimax-m2.5",
         "us.amazon.nova-2-lite-v1:0",
     )
+
+
+def _default_whisper_model_path() -> Path:
+    repo_root = Path(__file__).resolve().parents[5]
+    return repo_root / "services" / "back-end" / "models" / "whisper-small"
+
+
+def _default_whisper_model_download_url() -> str:
+    return "https://drive.google.com/drive/folders/1ocwtZAdkMK6kOAUr5XMm895IVhqkIB-P?usp=sharing"
 
 
 def _require_postgres_database_url() -> str:
@@ -65,6 +80,11 @@ class AppSettings:
     llm_proxy_base_url: str | None
     minio_access_key: str
     minio_secret_key: str
+    whisper_model_path: Path = field(default_factory=_default_whisper_model_path)
+    whisper_model_download_url: str = field(default_factory=_default_whisper_model_download_url)
+    whisper_model_auto_download_enabled: bool = True
+    whisper_default_language: str = "pt"
+    chat_audio_max_bytes: int = 25 * 1024 * 1024
     assistant_model_allowlist: tuple[str, ...] = field(default_factory=_default_assistant_model_allowlist)
     institution_profile_path: Path = field(default_factory=_default_institution_profile_path)
     cors_allowed_origins: tuple[str, ...] = field(
@@ -107,4 +127,20 @@ class AppSettings:
                 "MINIO_EXPORT_BUCKET",
                 os.getenv("MINIO_BUCKET_NAME", "conversations"),
             ),
+            whisper_model_path=Path(
+                os.getenv(
+                    "WHISPER_MODEL_PATH",
+                    str(_default_whisper_model_path()),
+                )
+            ).expanduser(),
+            whisper_model_download_url=os.getenv(
+                "WHISPER_MODEL_DOWNLOAD_URL",
+                _default_whisper_model_download_url(),
+            ),
+            whisper_model_auto_download_enabled=_as_bool(
+                os.getenv("WHISPER_MODEL_AUTO_DOWNLOAD_ENABLED"),
+                default=True,
+            ),
+            whisper_default_language=os.getenv("WHISPER_DEFAULT_LANGUAGE", "pt"),
+            chat_audio_max_bytes=_as_int(os.getenv("CHAT_AUDIO_MAX_BYTES"), 25 * 1024 * 1024),
         )

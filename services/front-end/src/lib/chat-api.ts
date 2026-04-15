@@ -29,6 +29,10 @@ export type SendChatMessageResponse = {
   assistant_message: ChatSessionMessage
 }
 
+export type SendChatAudioMessageResponse = SendChatMessageResponse & {
+  transcription: string
+}
+
 export type CreditBalance = {
   available: number
   checked_at: string
@@ -47,12 +51,14 @@ type ApiErrorPayload = {
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const headers = new Headers(init?.headers ?? {})
+  if (!(init?.body instanceof FormData) && !headers.has('Content-Type')) {
+    headers.set('Content-Type', 'application/json')
+  }
+
   const response = await fetch(`${apiBaseUrl}${path}`, {
     ...init,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(init?.headers ?? {}),
-    },
+    headers,
   })
 
   if (!response.ok) {
@@ -103,5 +109,30 @@ export function postChatMessage(input: {
       api_key: input.apiKey,
       model_id: input.modelId,
     }),
+  })
+}
+
+export function postChatAudioMessage(input: {
+  sessionId: string
+  audio: Blob
+  filename: string
+  apiKey: string
+  modelId?: string
+  language?: string
+}) {
+  const formData = new FormData()
+  formData.append('session_id', input.sessionId)
+  formData.append('api_key', input.apiKey)
+  formData.append('audio', input.audio, input.filename)
+  if (input.modelId) {
+    formData.append('model_id', input.modelId)
+  }
+  if (input.language) {
+    formData.append('language', input.language)
+  }
+
+  return request<SendChatAudioMessageResponse>('/api/chat/audio-messages', {
+    method: 'POST',
+    body: formData,
   })
 }

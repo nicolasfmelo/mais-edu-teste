@@ -32,6 +32,8 @@ dist/
 *.egg-info/
 coverage/
 *.tsbuildinfo
+services/back-end/models/whisper-small/
+services/back-end/coverage.xml
 
 # JavaScript/TypeScript workspaces
 **/node_modules/
@@ -48,3 +50,4 @@ coverage/
 *.env
 .codex
 services/AGENTS.md
+services/back-end/models/whisper-small

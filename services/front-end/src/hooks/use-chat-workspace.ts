@@ -8,16 +8,16 @@ import {
   type Thread,
 } from '@/lib/chat-ui'
 import {
-  createWorkspaceThread,
-  sendChatMessage,
   syncAutoScrollPreference,
-  useActiveThreadLoader,
-  useAssistantModelsLoader,
   useChatAutoScroll,
-  useChatBootstrap,
-  useCreditsLoader,
   useInfoBannerRotation,
 } from './use-chat-workspace-helpers'
+import { createWorkspaceThread, sendChatAudioMessage, sendChatMessage } from './use-chat-workspace-actions'
+import {
+  useActiveThreadLoader,
+  useChatBootstrap,
+} from './use-chat-workspace-loaders'
+import { useAssistantModelsLoader, useCreditsLoader } from './use-chat-workspace-resource-loaders'
 
 export function useChatWorkspace() {
   const [activeModelId, setActiveModelId] = useState<string | null>(null)
@@ -117,6 +117,25 @@ export function useChatWorkspace() {
       setCredits,
     })
 
+  const sendAudioMessage = (audio: File) =>
+    sendChatAudioMessage({
+      audio,
+      activeThreadId,
+      credits,
+      isSending,
+      trimmedApiKey,
+      apiKey,
+      modelId: activeModel.modelId,
+      threads,
+      setApiKeyModalOpen,
+      setErrorMessage,
+      setMessagesByThread,
+      setThreads,
+      setIsSending,
+      setLoadedThreadIds,
+      setCredits,
+    })
+
   const createThread = () =>
     createWorkspaceThread({
       isCreatingThread,
@@ -167,6 +186,7 @@ export function useChatWorkspace() {
     },
     selectThread: setActiveThreadId,
     sendMessage,
+    sendAudioMessage,
     setApiKeyDraft,
     toggleModelMenu: () => setModelMenuOpen((current) => !current),
     threads,

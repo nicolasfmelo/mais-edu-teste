@@ -7,6 +7,7 @@ from fastapi.responses import JSONResponse
 from app.bootstrap.container import AppContainer
 from app.domain_models.common.exceptions import (
     BackendDomainError,
+    AudioTranscriptionError,
     ConversationAnalysisError,
     ConversationExportError,
     LLMProxyConfigurationError,
@@ -44,6 +45,7 @@ def create_application(container: AppContainer | None = None) -> FastAPI:
     application.add_exception_handler(PromptRegistryEntryNotFoundError, _handle_prompt_not_found_error)
     application.add_exception_handler(PromptAlreadyExistsError, _handle_prompt_conflict_error)
     application.add_exception_handler(BackendDomainError, _handle_backend_domain_error)
+    application.add_exception_handler(AudioTranscriptionError, _handle_audio_transcription_error)
     application.add_exception_handler(ConversationExportError, _handle_conversation_export_error)
     application.add_exception_handler(ConversationAnalysisError, _handle_conversation_analysis_error)
     application.include_router(app_container.build_router())
@@ -80,6 +82,10 @@ async def _handle_prompt_conflict_error(_: Request, exc: PromptAlreadyExistsErro
 
 async def _handle_backend_domain_error(_: Request, exc: BackendDomainError) -> JSONResponse:
     return JSONResponse(status_code=400, content={"error": str(exc)})
+
+
+async def _handle_audio_transcription_error(_: Request, exc: AudioTranscriptionError) -> JSONResponse:
+    return JSONResponse(status_code=502, content={"error": str(exc)})
 
 
 async def _handle_conversation_export_error(_: Request, exc: ConversationExportError) -> JSONResponse:

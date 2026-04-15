@@ -52,3 +52,7 @@ class ConversationAnalysisError(BackendDomainError):
 
 class EvaluationNotFoundError(BackendDomainError):
     """Raised when an agent evaluation record cannot be found."""
+
+
+class AudioTranscriptionError(BackendDomainError):
+    """Raised when audio transcription fails."""
