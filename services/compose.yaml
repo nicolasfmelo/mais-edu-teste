@@ -58,6 +58,18 @@ services:
         condition: service_healthy
       minio:
         condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/metrics/health', timeout=3)",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 120s
     ports:
       - "8000:8000"
 
@@ -70,7 +82,7 @@ services:
     restart: unless-stopped
     depends_on:
       back-end:
-        condition: service_started
+        condition: service_healthy
     ports:
       - "8080:80"
 
@@ -84,7 +96,7 @@ services:
       - ./observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
     depends_on:
       back-end:
-        condition: service_started
+        condition: service_healthy
     ports:
       - "9090:9090"
 
