@@ -41,6 +41,7 @@ services:
     restart: unless-stopped
     environment:
       LLM_PROXY_TEST_API_KEY: ${LLM_PROXY_TEST_API_KEY:-dummy-key-for-testing}
+      LLM_PROXY_BASE_URL: ${LLM_PROXY_BASE_URL:-https://kviwmiapph.execute-api.us-east-1.amazonaws.com/v1}
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-mais_a_educ}
       MINIO_ENDPOINT: http://minio:9000
       MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minioadmin}
@@ -49,7 +50,7 @@ services:
       DATASETS_DIR: /app/datasets
       INSTITUTION_PROFILE_PATH: /app/back-end/institution-profile.md
       WHISPER_MODEL_PATH: /app/back-end/models/whisper-small
-      CORS_ALLOWED_ORIGINS: http://localhost:8080,http://0.0.0.0:8080
+      CORS_ALLOWED_ORIGINS: http://localhost:8080,http://127.0.0.1:8080,http://0.0.0.0:8080
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
       LOG_FORMAT: ${LOG_FORMAT:-json}
     depends_on:
@@ -65,7 +66,7 @@ services:
       context: .
       dockerfile: front-end/Dockerfile
       args:
-        VITE_API_BASE_URL: http://localhost:8000
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-/api}
     restart: unless-stopped
     depends_on:
       back-end:

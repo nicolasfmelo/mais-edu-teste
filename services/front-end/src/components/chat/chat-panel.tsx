@@ -2,10 +2,10 @@ import { memo, useState, type KeyboardEvent, type RefObject } from 'react'
 
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
-import { CheckCheck, CircleAlert, LoaderCircle, Mic, SendHorizontal, Square, X } from 'lucide-react'
+import { CheckCheck, CircleAlert, LoaderCircle, Mic, SendHorizontal, Trash2 } from 'lucide-react'
 
-import { Button } from '@/components/ui/button'
 import { useAudioRecorder } from '@/components/chat/use-audio-recorder'
+import { Button } from '@/components/ui/button'
 import type { Message } from '@/lib/chat-ui'
 
 type ChatPanelProps = {
@@ -35,32 +35,6 @@ type MessageComposerProps = {
   onSendAudio: (audio: File) => void
 }
 
-type AudioSelectionBannerProps = {
-  audioFile: File | null
-  onRemove: () => void
-}
-
-function AudioSelectionBanner({ audioFile, onRemove }: AudioSelectionBannerProps) {
-  if (!audioFile) {
-    return null
-  }
-
-  return (
-    <div className="mx-auto mb-2 flex max-w-4xl items-center justify-between rounded-lg border border-[#c4d0d6] bg-white px-3 py-2 text-xs text-[#54656f]">
-      <span className="truncate">{audioFile.name}</span>
-      <button
-        type="button"
-        onClick={onRemove}
-        className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[#54656f] hover:bg-[#f0f2f5]"
-        aria-label="Remover audio selecionado"
-      >
-        <X className="size-3.5" />
-        remover
-      </button>
-    </div>
-  )
-}
-
 type RecordingErrorBannerProps = {
   message: string | null
 }
@@ -77,53 +51,93 @@ function RecordingErrorBanner({ message }: RecordingErrorBannerProps) {
   )
 }
 
-type RecordButtonProps = {
-  isRecording: boolean
-  canRecord: boolean
-  canStopRecord: boolean
-  startRecording: () => Promise<void>
-  stopRecording: () => void
+function formatRecordingDuration(totalSeconds: number) {
+  const minutes = Math.floor(totalSeconds / 60)
+  const seconds = totalSeconds % 60
+
+  return `${minutes}:${seconds.toString().padStart(2, '0')}`
 }
 
-function RecordButton({
-  isRecording,
-  canRecord,
-  canStopRecord,
-  startRecording,
-  stopRecording,
-}: RecordButtonProps) {
+type RecordingComposerProps = {
+  durationSeconds: number
+  canDiscard: boolean
+  onDiscard: () => void
+}
+
+function RecordingComposer({ durationSeconds, canDiscard, onDiscard }: RecordingComposerProps) {
+  const bars = [10, 16, 28, 20, 12, 24, 18, 11, 22, 15, 26, 14]
+
   return (
-    <Button
-      type="button"
-      variant="outline"
-      onClick={isRecording ? stopRecording : () => void startRecording()}
-      aria-label={isRecording ? 'Parar gravação' : 'Gravar áudio'}
-      className={`size-11 rounded-full border-[#c4d0d6] text-[#54656f] hover:bg-[#f0f2f5] ${
-        isRecording ? 'bg-[#ffe8e8]' : 'bg-white'
-      }`}
-      disabled={isRecording ? !canStopRecord : !canRecord}
-    >
-      {isRecording ? <Square className="size-4.5 text-[#b42318]" /> : <Mic className="size-4.5" />}
-    </Button>
+    <div className="flex min-h-14 flex-1 items-center rounded-lg bg-[#0b141a] px-3 text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.04)]">
+      <button
+        type="button"
+        onClick={onDiscard}
+        disabled={!canDiscard}
+        aria-label="Descartar gravação"
+        className="inline-flex size-9 items-center justify-center rounded-full text-[#aebac1] transition hover:bg-white/8 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        <Trash2 className="size-5" />
+      </button>
+
+      <span className="ml-2 min-w-18 text-3xl font-light tabular-nums text-[#f5f8fa]">
+        {formatRecordingDuration(durationSeconds)}
+      </span>
+
+      <div className="ml-4 flex flex-1 items-center justify-center gap-1.5">
+        {bars.map((height, index) => (
+          <span
+            key={`${height}-${index}`}
+            className="w-1.5 rounded-full bg-[#aebac1]/90 animate-pulse"
+            style={{ height: `${height}px`, animationDelay: `${index * 120}ms` }}
+          />
+        ))}
+      </div>
+
+      <span className="ml-3 text-[11px] font-medium tracking-[0.2em] text-[#8ca2b0]">REC</span>
+    </div>
   )
 }
 
-type SendButtonProps = {
+type MainActionButtonProps = {
   isSending: boolean
+  isRecording: boolean
+  hasDraft: boolean
+  isFinalizingRecording: boolean
   disabled: boolean
-  onSend: () => void
+  onClick: () => void
 }
 
-function SendButton({ isSending, disabled, onSend }: SendButtonProps) {
+function MainActionButton({
+  isSending,
+  isRecording,
+  hasDraft,
+  isFinalizingRecording,
+  disabled,
+  onClick,
+}: MainActionButtonProps) {
+  const shouldShowLoader = isSending || isFinalizingRecording
+
+  const ariaLabel = isRecording
+    ? 'Parar gravação e enviar áudio'
+    : hasDraft
+      ? 'Enviar mensagem'
+      : 'Iniciar gravação de áudio'
+
   return (
     <Button
       type="button"
-      onClick={onSend}
+      onClick={onClick}
       disabled={disabled}
-      aria-label={isSending ? 'Enviando mensagem' : 'Enviar mensagem'}
-      className="size-11 rounded-full bg-[#00a884] text-white hover:bg-[#0dc39a]"
+      aria-label={ariaLabel}
+      className="size-11 rounded-full bg-[#00a884] text-white hover:bg-[#0dc39a] disabled:bg-[#9abcb4]"
     >
-      {isSending ? <LoaderCircle className="size-5 animate-spin" /> : <SendHorizontal className="size-5" />}
+      {shouldShowLoader ? (
+        <LoaderCircle className="size-5 animate-spin" />
+      ) : hasDraft || isRecording ? (
+        <SendHorizontal className="size-5" />
+      ) : (
+        <Mic className="size-5" />
+      )}
     </Button>
   )
 }
@@ -137,67 +151,120 @@ const MessageComposer = memo(function MessageComposer({
   onSendAudio,
 }: MessageComposerProps) {
   const [draft, setDraft] = useState('')
-  const { audioFile, isRecording, recordingError, startRecording, stopRecording, clearAudioFile } =
-    useAudioRecorder()
+  const [isFinalizingRecording, setIsFinalizingRecording] = useState(false)
+
+  const {
+    isRecording,
+    recordingError,
+    recordingDurationSeconds,
+    startRecording,
+    stopRecordingAndGetFile,
+    discardRecording,
+    clearAudioFile,
+  } = useAudioRecorder()
 
   const isInteractionLocked = [!hasActiveThread, isBootstrapping, isSending].some(Boolean)
   const canSpendCredits = credits !== 0
-  const hasDraft = Boolean(draft.trim())
-  const canSendText = hasDraft && !isInteractionLocked && canSpendCredits
-  const canSendAudio = Boolean(audioFile) && !isInteractionLocked && canSpendCredits
-  const canRecord = !isInteractionLocked && !isRecording && canSpendCredits
-  const canStopRecord = !isInteractionLocked && isRecording
+  const trimmedDraft = draft.trim()
+  const hasDraft = Boolean(trimmedDraft)
 
-  const handleSend = () => {
-    if (audioFile && canSendAudio) {
-      onSendAudio(audioFile)
-      clearAudioFile()
-      setDraft('')
+  const canSendText = hasDraft && !isInteractionLocked && canSpendCredits
+  const canStartRecording = !isInteractionLocked && !isRecording && !hasDraft && canSpendCredits && !isFinalizingRecording
+  const canStopAndSendRecording = isRecording && !isBootstrapping && hasActiveThread && canSpendCredits && !isFinalizingRecording
+  const canDiscardRecording = isRecording && !isFinalizingRecording
+
+  const isMainActionDisabled = isRecording ? !canStopAndSendRecording : hasDraft ? !canSendText : !canStartRecording
+
+  const handleMainAction = async () => {
+    if (isRecording) {
+      if (!canStopAndSendRecording) {
+        return
+      }
+
+      setIsFinalizingRecording(true)
+
+      try {
+        const recordedFile = await stopRecordingAndGetFile()
+        if (!recordedFile) {
+          return
+        }
+
+        clearAudioFile()
+        setDraft('')
+        onSendAudio(recordedFile)
+      } finally {
+        setIsFinalizingRecording(false)
+      }
+
       return
     }
 
-    const content = draft.trim()
-    if (!content || !canSendText) return
-    setDraft('')
-    onSend(content)
+    if (hasDraft) {
+      if (!canSendText) {
+        return
+      }
+
+      setDraft('')
+      clearAudioFile()
+      onSend(trimmedDraft)
+      return
+    }
+
+    if (!canStartRecording) {
+      return
+    }
+
+    await startRecording()
+  }
+
+  const handleDiscardRecording = () => {
+    discardRecording()
+    setIsFinalizingRecording(false)
   }
 
   const handleKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault()
-      handleSend()
+      void handleMainAction()
     }
   }
 
   return (
     <div className="border-t border-black/8 bg-[#f0f2f5] px-4 py-3">
-      <AudioSelectionBanner audioFile={audioFile} onRemove={clearAudioFile} />
       <RecordingErrorBanner message={recordingError} />
+
       <div className="mx-auto flex max-w-4xl items-end gap-3">
-        <RecordButton
-          isRecording={isRecording}
-          canRecord={canRecord}
-          canStopRecord={canStopRecord}
-          startRecording={startRecording}
-          stopRecording={stopRecording}
-        />
-
-        <div className="flex min-h-14 flex-1 items-center rounded-lg bg-white px-3">
-          <textarea
-            id="chat-message-input"
-            name="message"
-            aria-label="Mensagem do chat"
-            value={draft}
-            onChange={(event) => setDraft(event.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Type a message"
-            className="min-h-10 flex-1 resize-none bg-transparent py-3 text-sm text-[#111b21] outline-none placeholder:text-[#8696a0]"
-            autoComplete="off"
-            disabled={isInteractionLocked}
+        {isRecording ? (
+          <RecordingComposer
+            durationSeconds={recordingDurationSeconds}
+            canDiscard={canDiscardRecording}
+            onDiscard={handleDiscardRecording}
           />
-        </div>
+        ) : (
+          <div className="flex min-h-14 flex-1 items-center rounded-lg bg-white px-3">
+            <textarea
+              id="chat-message-input"
+              name="message"
+              aria-label="Mensagem do chat"
+              value={draft}
+              onChange={(event) => setDraft(event.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Type a message"
+              className="min-h-10 flex-1 resize-none bg-transparent py-3 text-sm text-[#111b21] outline-none placeholder:text-[#8696a0]"
+              autoComplete="off"
+              disabled={isInteractionLocked || isFinalizingRecording}
+            />
+          </div>
+        )}
 
-        <SendButton isSending={isSending} disabled={!canSendText && !canSendAudio} onSend={handleSend} />
+        <MainActionButton
+          isSending={isSending}
+          isRecording={isRecording}
+          hasDraft={hasDraft}
+          isFinalizingRecording={isFinalizingRecording}
+          disabled={isMainActionDisabled}
+          onClick={() => void handleMainAction()}
+        />
       </div>
     </div>
   )

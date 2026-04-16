@@ -1,6 +1,7 @@
 import { BookOpen, ChartColumn, ChevronDown, KeyRound, MessageSquare, Plus, Sparkles, Wallet, Workflow } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
+import type { CreditsStatus } from '@/hooks/use-chat-workspace-resource-loaders'
 import type { ModelOption } from '@/lib/chat-ui'
 
 export type AppPage = 'chat' | 'metrics' | 'llmops' | 'docs'
@@ -22,6 +23,7 @@ type AppToolbarProps = {
   isBootstrapping: boolean
   isCreatingThread: boolean
   credits: number | null
+  creditsStatus: CreditsStatus
   apiKey: string
   activePage: AppPage
   onToggleModelMenu: () => void
@@ -38,6 +40,7 @@ export function AppToolbar({
   isBootstrapping,
   isCreatingThread,
   credits,
+  creditsStatus,
   apiKey,
   activePage,
   onToggleModelMenu,
@@ -46,6 +49,22 @@ export function AppToolbar({
   onOpenApiKeyModal,
   onNavigateTo,
 }: AppToolbarProps) {
+  const creditsLabel = (() => {
+    if (!apiKey) {
+      return 'Sem chave'
+    }
+    if (creditsStatus === 'loading') {
+      return 'Carregando...'
+    }
+    if (creditsStatus === 'error') {
+      return 'Erro na chave'
+    }
+    if (credits !== null) {
+      return `${credits} credits`
+    }
+    return 'Sem saldo'
+  })()
+
   return (
     <header className="border-b border-black/8 bg-[#f7f8fa] px-4 py-3 sm:px-5">
       <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
@@ -99,9 +118,13 @@ export function AppToolbar({
                 active assistant
               </span>
               <span className="text-sm font-semibold text-[#111b21]">{activeModel.label}</span>
-              <span className="inline-flex items-center gap-1 rounded-full bg-[#d9fdd3] px-2.5 py-1 text-xs font-medium text-[#0b5c4b]">
+              <span
+                className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium ${
+                  creditsStatus === 'error' ? 'bg-[#fdecea] text-[#8a1c17]' : 'bg-[#d9fdd3] text-[#0b5c4b]'
+                }`}
+              >
                 <Wallet className="size-3.5" />
-                {credits === null ? (apiKey ? 'Carregando...' : 'Sem chave') : `${credits} credits`}
+                {creditsLabel}
               </span>
               <button
                 type="button"

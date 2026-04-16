@@ -108,7 +108,7 @@ class AppSettings:
             indexing_bootstrap_enabled=_as_bool(os.getenv("INDEXING_BOOTSTRAP_ENABLED"), default=True),
             llm_proxy_base_url=os.getenv(
                 "LLM_PROXY_BASE_URL",
-                "https://kviwmiapph.execute-api.us-east-1.amazonaws.com",
+                "https://kviwmiapph.execute-api.us-east-1.amazonaws.com/v1",
             ),
             assistant_model_allowlist=_as_tuple(
                 os.getenv("ASSISTANT_MODEL_ALLOWLIST"),

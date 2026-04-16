@@ -17,7 +17,11 @@ import {
   useActiveThreadLoader,
   useChatBootstrap,
 } from './use-chat-workspace-loaders'
-import { useAssistantModelsLoader, useCreditsLoader } from './use-chat-workspace-resource-loaders'
+import {
+  useAssistantModelsLoader,
+  useCreditsLoader,
+  type CreditsStatus,
+} from './use-chat-workspace-resource-loaders'
 
 export function useChatWorkspace() {
   const [activeModelId, setActiveModelId] = useState<string | null>(null)
@@ -25,6 +29,7 @@ export function useChatWorkspace() {
   const [apiKeyDraft, setApiKeyDraft] = useState('')
   const [apiKeyModalOpen, setApiKeyModalOpen] = useState(false)
   const [credits, setCredits] = useState<number | null>(null)
+  const [creditsStatus, setCreditsStatus] = useState<CreditsStatus>('idle')
   const [assistantModelOptions, setAssistantModelOptions] = useState<ModelOption[]>([])
   const [threads, setThreads] = useState<Thread[]>([])
   const [messagesByThread, setMessagesByThread] = useState<Record<string, Message[]>>({})
@@ -79,6 +84,7 @@ export function useChatWorkspace() {
   useCreditsLoader({
     trimmedApiKey,
     setCredits,
+    setCreditsStatus,
     setErrorMessage,
   })
   useChatAutoScroll({
@@ -158,6 +164,7 @@ export function useChatWorkspace() {
     apiKeyModalOpen,
     chatScrollRef,
     credits,
+    creditsStatus,
     errorMessage,
     handleChatScroll,
     infoBannerMessage: infoBannerMessages[infoBannerIndex],

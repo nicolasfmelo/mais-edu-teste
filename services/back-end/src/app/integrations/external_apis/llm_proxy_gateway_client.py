@@ -14,8 +14,14 @@ from app.domain_models.common.exceptions import (
 
 class LLMProxyGatewayClient:
     def __init__(self, base_url: str, timeout_seconds: float = 30.0) -> None:
-        self._base_url = base_url.rstrip("/")
+        self._base_url = self._normalize_base_url(base_url)
         self._timeout_seconds = timeout_seconds
+
+    def _normalize_base_url(self, base_url: str) -> str:
+        normalized = base_url.rstrip("/")
+        if normalized.endswith("/v1"):
+            return normalized[: -len("/v1")]
+        return normalized
 
     def get_credit_balance(self, api_key: str) -> CreditBalance:
         payload = self._request_json(
@@ -110,8 +116,13 @@ class LLMProxyGatewayClient:
         return response
 
     def _raise_for_status(self, response: httpx.Response) -> None:
-        if response.status_code in {401, 404}:
+        if response.status_code == 401:
             raise LLMProxyUnauthorizedError("The provided API key is missing or invalid.")
+        if response.status_code == 404:
+            error_code = self._extract_error_code(response)
+            if error_code == "api_key_not_found":
+                raise LLMProxyUnauthorizedError("The provided API key is missing or invalid.")
+            raise LLMProxyInvocationError("LLM proxy endpoint not found. Check LLM_PROXY_BASE_URL.")
         if response.status_code == 402:
             raise LLMProxyInsufficientCreditError("The provided API key has insufficient credit.")
         if response.status_code == 400:
@@ -125,7 +136,10 @@ class LLMProxyGatewayClient:
             raise LLMProxyInvocationError(f"Unexpected LLM proxy status: {response.status_code}.")
 
     def _extract_error_code(self, response: httpx.Response) -> str | None:
-        payload = response.json()
+        try:
+            payload = response.json()
+        except ValueError:
+            return None
         error_code = payload.get("error")
         return error_code if isinstance(error_code, str) else None
 

@@ -5,6 +5,7 @@ import { getErrorMessage, mapModelOption, pickActiveModelId, type ModelOption } 
 
 type SetState<T> = Dispatch<SetStateAction<T>>
 type SetErrorMessage = SetState<string | null>
+export type CreditsStatus = 'idle' | 'loading' | 'success' | 'error'
 
 export function useAssistantModelsLoader(params: {
   setAssistantModelOptions: SetState<ModelOption[]>
@@ -44,27 +45,33 @@ export function useAssistantModelsLoader(params: {
 export function useCreditsLoader(params: {
   trimmedApiKey: string
   setCredits: SetState<number | null>
+  setCreditsStatus: SetState<CreditsStatus>
   setErrorMessage: SetErrorMessage
 }) {
-  const { trimmedApiKey, setCredits, setErrorMessage } = params
+  const { trimmedApiKey, setCredits, setCreditsStatus, setErrorMessage } = params
 
   useEffect(() => {
     if (!trimmedApiKey) {
       setCredits(null)
+      setCreditsStatus('idle')
       return
     }
 
     let cancelled = false
 
     const loadCredits = async () => {
+      setCreditsStatus('loading')
+      setErrorMessage(null)
       try {
         const balance = await getCreditBalance(trimmedApiKey)
         if (!cancelled) {
           setCredits(balance.available)
+          setCreditsStatus('success')
         }
       } catch (error) {
         if (!cancelled) {
           setCredits(null)
+          setCreditsStatus('error')
           setErrorMessage(getErrorMessage(error, 'Nao foi possivel carregar os creditos atuais.'))
         }
       }
@@ -75,5 +82,5 @@ export function useCreditsLoader(params: {
     return () => {
       cancelled = true
     }
-  }, [setCredits, setErrorMessage, trimmedApiKey])
+  }, [setCredits, setCreditsStatus, setErrorMessage, trimmedApiKey])
 }

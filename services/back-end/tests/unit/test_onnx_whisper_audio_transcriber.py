@@ -1,4 +1,5 @@
 from pathlib import Path
+import subprocess
 
 import pytest
 
@@ -37,7 +38,14 @@ def test_ensure_model_files_available_raises_when_gdown_is_missing(
         model_download_url="https://drive.google.com/drive/folders/test",
         auto_download_enabled=True,
     )
-    monkeypatch.setattr(transcriber_module, "gdown", None)
+    def fake_run(args, **kwargs):  # noqa: ANN001, ANN003, ANN202
+        raise subprocess.CalledProcessError(
+            returncode=1,
+            cmd=args,
+            stderr="No module named gdown",
+        )
+
+    monkeypatch.setattr(transcriber_module.subprocess, "run", fake_run)
 
     with pytest.raises(AudioTranscriptionError, match="Dependencia gdown"):
         transcriber._ensure_model_files_available()
@@ -50,17 +58,18 @@ def test_ensure_model_files_available_downloads_folder_when_missing(
     model_dir = tmp_path / "models" / "whisper-small"
     calls = {"count": 0}
 
-    class FakeGDown:
-        @staticmethod
-        def download_folder(*, url: str, output: str, quiet: bool, remaining_ok: bool):  # noqa: ANN206
-            assert "drive.google.com" in url
-            assert quiet is True
-            assert remaining_ok is True
-            calls["count"] += 1
-            _create_required_model_files(Path(output) / "whisper-small")
-            return ["ok"]
+    def fake_run(args, **kwargs):  # noqa: ANN001, ANN003, ANN202
+        assert "python" in Path(args[0]).name
+        assert args[1:4] == ["-m", "gdown", "--folder"]
+        assert "drive.google.com" in args[4]
+        assert "--remaining-ok" in args
+        assert "--quiet" in args
+        assert kwargs["timeout"] > 0
+        calls["count"] += 1
+        _create_required_model_files(Path(args[6]) / "whisper-small")
+        return subprocess.CompletedProcess(args=args, returncode=0, stdout="", stderr="")
 
-    monkeypatch.setattr(transcriber_module, "gdown", FakeGDown)
+    monkeypatch.setattr(transcriber_module.subprocess, "run", fake_run)
     transcriber = OnnxWhisperAudioTranscriber(
         model_dir=model_dir,
         model_download_url="https://drive.google.com/drive/folders/test",
@@ -82,13 +91,11 @@ def test_ensure_model_files_available_skips_download_when_files_are_present(
     _create_required_model_files(model_dir)
     calls = {"count": 0}
 
-    class FakeGDown:
-        @staticmethod
-        def download_folder(*, url: str, output: str, quiet: bool, remaining_ok: bool):  # noqa: ANN206
-            calls["count"] += 1
-            return ["ok"]
+    def fake_run(*args, **kwargs):  # noqa: ANN002, ANN003, ANN202
+        calls["count"] += 1
+        return subprocess.CompletedProcess(args=args, returncode=0, stdout="", stderr="")
 
-    monkeypatch.setattr(transcriber_module, "gdown", FakeGDown)
+    monkeypatch.setattr(transcriber_module.subprocess, "run", fake_run)
     transcriber = OnnxWhisperAudioTranscriber(
         model_dir=model_dir,
         model_download_url="https://drive.google.com/drive/folders/test",
@@ -109,13 +116,11 @@ def test_ensure_model_files_available_adopts_flat_layout_without_redownloading(
     _create_required_model_files(models_root)
     calls = {"count": 0}
 
-    class FakeGDown:
-        @staticmethod
-        def download_folder(*, url: str, output: str, quiet: bool, remaining_ok: bool):  # noqa: ANN206
-            calls["count"] += 1
-            return ["ok"]
+    def fake_run(*args, **kwargs):  # noqa: ANN002, ANN003, ANN202
+        calls["count"] += 1
+        return subprocess.CompletedProcess(args=args, returncode=0, stdout="", stderr="")
 
-    monkeypatch.setattr(transcriber_module, "gdown", FakeGDown)
+    monkeypatch.setattr(transcriber_module.subprocess, "run", fake_run)
     transcriber = OnnxWhisperAudioTranscriber(
         model_dir=model_dir,
         model_download_url="https://drive.google.com/drive/folders/test",
@@ -127,3 +132,21 @@ def test_ensure_model_files_available_adopts_flat_layout_without_redownloading(
     assert calls["count"] == 0
     for filename in _REQUIRED_MODEL_FILES:
         assert (model_dir / filename).exists()
+
+
+def test_ensure_model_ready_delegates_to_file_check(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    model_dir = tmp_path / "models" / "whisper-small"
+    transcriber = OnnxWhisperAudioTranscriber(
+        model_dir=model_dir,
+        auto_download_enabled=False,
+    )
+    calls = {"count": 0}
+
+    def fake_ensure() -> None:
+        calls["count"] += 1
+
+    monkeypatch.setattr(transcriber, "_ensure_model_files_available", fake_ensure)
+
+    transcriber.ensure_model_ready()
+
+    assert calls["count"] == 1

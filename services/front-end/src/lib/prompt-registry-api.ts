@@ -1,4 +1,5 @@
-const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL ?? 'http://0.0.0.0:8000').replace(/\/$/, '')
+import { buildApiUrl } from '@/lib/api-url'
+import { fetchWithTimeout, readJsonBody } from '@/lib/http-json'
 
 type ApiErrorPayload = {
   error?: string
@@ -30,7 +31,7 @@ export type CreatePromptVersionInput = {
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(`${apiBaseUrl}${path}`, {
+  const response = await fetchWithTimeout(buildApiUrl(path), {
     ...init,
     headers: {
       'Content-Type': 'application/json',
@@ -39,26 +40,46 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   })
 
   if (!response.ok) {
-    const payload = (await response.json().catch(() => null)) as ApiErrorPayload | null
+    const { value: payload } = await readJsonBody<ApiErrorPayload>(response)
     throw new Error(payload?.error ?? 'Nao foi possivel completar a requisicao.')
   }
 
-  return (await response.json()) as T
+  const { parsed, value, raw } = await readJsonBody<T>(response)
+  if (!parsed || value === null) {
+    const contentType = response.headers.get('content-type') ?? 'desconhecido'
+    const snippet = raw.slice(0, 80).replace(/\s+/g, ' ')
+    throw new Error(
+      `Resposta invalida da API em ${path} (content-type: ${contentType}).` +
+        (snippet ? ` Trecho: ${snippet}` : ' Verifique VITE_API_BASE_URL/proxy.'),
+    )
+  }
+
+  return value
 }
 
 export async function getPrompt(promptKey: string): Promise<PromptRegistryEntry | null> {
-  const response = await fetch(`${apiBaseUrl}/api/prompt-registry/prompts/${promptKey}`)
+  const response = await fetchWithTimeout(buildApiUrl(`/api/prompt-registry/prompts/${promptKey}`))
 
   if (response.status === 404) {
     return null
   }
 
   if (!response.ok) {
-    const payload = (await response.json().catch(() => null)) as ApiErrorPayload | null
+    const { value: payload } = await readJsonBody<ApiErrorPayload>(response)
     throw new Error(payload?.error ?? 'Nao foi possivel carregar o prompt.')
   }
 
-  return (await response.json()) as PromptRegistryEntry
+  const { parsed, value, raw } = await readJsonBody<PromptRegistryEntry>(response)
+  if (!parsed || value === null) {
+    const contentType = response.headers.get('content-type') ?? 'desconhecido'
+    const snippet = raw.slice(0, 80).replace(/\s+/g, ' ')
+    throw new Error(
+      `Resposta invalida da API em /api/prompt-registry/prompts/${promptKey} (content-type: ${contentType}).` +
+        (snippet ? ` Trecho: ${snippet}` : ' Verifique VITE_API_BASE_URL/proxy.'),
+    )
+  }
+
+  return value
 }
 
 export function createPrompt(input: CreatePromptInput) {

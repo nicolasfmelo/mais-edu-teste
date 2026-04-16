@@ -55,6 +55,7 @@ function App() {
           isBootstrapping={workspace.isBootstrapping}
           isCreatingThread={workspace.isCreatingThread}
           credits={workspace.credits}
+          creditsStatus={workspace.creditsStatus}
           apiKey={workspace.apiKey}
           activePage={activePage}
           onToggleModelMenu={workspace.toggleModelMenu}

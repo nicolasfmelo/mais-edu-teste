@@ -237,6 +237,8 @@ class AppContainer:
     def startup(self) -> None:
         if self._started:
             return
+        logger.info("Ensuring Whisper ONNX model is available at startup.")
+        self._audio_transcriber.ensure_model_ready()
         self._database.create_schema()
         self._agent_prompt_service.ensure_default_prompts()
         self._started = True

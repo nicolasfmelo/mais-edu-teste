@@ -1,4 +1,5 @@
-const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL ?? 'http://0.0.0.0:8000').replace(/\/$/, '')
+import { buildApiUrl } from '@/lib/api-url'
+import { fetchWithTimeout, readJsonBody } from '@/lib/http-json'
 
 export type MetricsSummary = {
   total_sessions: number
@@ -89,16 +90,34 @@ export type TokensReport = {
 }
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
-  const response = await fetch(`${apiBaseUrl}${path}`, options)
+  const response = await fetchWithTimeout(buildApiUrl(path), options)
   if (!response.ok) throw new Error('Não foi possível carregar os dados.')
-  return (await response.json()) as T
+  const { parsed, value, raw } = await readJsonBody<T>(response)
+  if (!parsed || value === null) {
+    const contentType = response.headers.get('content-type') ?? 'desconhecido'
+    const snippet = raw.slice(0, 80).replace(/\s+/g, ' ')
+    throw new Error(
+      `Resposta inválida da API em ${path} (content-type: ${contentType}).` +
+        (snippet ? ` Trecho: ${snippet}` : ' Verifique VITE_API_BASE_URL/proxy.'),
+    )
+  }
+  return value
 }
 
 async function requestOrNull<T>(path: string): Promise<T | null> {
-  const response = await fetch(`${apiBaseUrl}${path}`)
+  const response = await fetchWithTimeout(buildApiUrl(path))
   if (response.status === 404) return null
   if (!response.ok) throw new Error('Não foi possível carregar os dados.')
-  return (await response.json()) as T
+  const { parsed, value, raw } = await readJsonBody<T>(response)
+  if (!parsed) {
+    const contentType = response.headers.get('content-type') ?? 'desconhecido'
+    const snippet = raw.slice(0, 80).replace(/\s+/g, ' ')
+    throw new Error(
+      `Resposta inválida da API em ${path} (content-type: ${contentType}).` +
+        (snippet ? ` Trecho: ${snippet}` : ' Verifique VITE_API_BASE_URL/proxy.'),
+    )
+  }
+  return value
 }
 
 export function getMetricsSummary() {

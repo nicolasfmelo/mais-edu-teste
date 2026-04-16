@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 
 from app.domain_models.common.contracts import MetricsJobRepository
 from app.domain_models.metrics.job_models import MetricsJobType
@@ -20,13 +20,13 @@ class MetricsHandler:
             "/jobs/export/latest",
             self.latest_export_job,
             methods=["GET"],
-            response_model=MetricsJobResponseSchema,
+            response_model=MetricsJobResponseSchema | None,
         )
         self.router.add_api_route(
             "/jobs/analysis/latest",
             self.latest_analysis_job,
             methods=["GET"],
-            response_model=MetricsJobResponseSchema,
+            response_model=MetricsJobResponseSchema | None,
         )
 
     async def health(self) -> HealthResponseSchema:
@@ -38,14 +38,14 @@ class MetricsHandler:
     async def tokens_report(self) -> TokensReportResponseSchema:
         return TokensReportResponseSchema.from_domain(self._metrics_service.tokens_report())
 
-    async def latest_export_job(self) -> MetricsJobResponseSchema:
+    async def latest_export_job(self) -> MetricsJobResponseSchema | None:
         job = self._metrics_job_repository.get_latest_job(MetricsJobType.EXPORT)
         if job is None:
-            raise HTTPException(status_code=404, detail="No export job found.")
+            return None
         return MetricsJobResponseSchema.from_domain(job)
 
-    async def latest_analysis_job(self) -> MetricsJobResponseSchema:
+    async def latest_analysis_job(self) -> MetricsJobResponseSchema | None:
         job = self._metrics_job_repository.get_latest_job(MetricsJobType.ANALYSIS)
         if job is None:
-            raise HTTPException(status_code=404, detail="No analysis job found.")
+            return None
         return MetricsJobResponseSchema.from_domain(job)

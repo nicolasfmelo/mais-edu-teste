@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import os
 import shutil
 import subprocess  # nosec B404: required to invoke local ffmpeg for deterministic audio decoding
@@ -12,11 +13,6 @@ from typing import Any
 import numpy as np
 
 from app.domain_models.common.exceptions import AudioTranscriptionError
-
-try:
-    import gdown
-except Exception:  # pragma: no cover - import guard
-    gdown = None
 
 try:
     import onnxruntime as ort
@@ -61,6 +57,9 @@ _KNOWN_MODEL_ARTIFACT_FILES = (
     "tokenizer_config.json",
     "vocab.json",
 )
+_MODEL_DOWNLOAD_TIMEOUT_SECONDS = 600
+
+logger = logging.getLogger(__name__)
 
 
 class OnnxWhisperAudioTranscriber:
@@ -149,6 +148,9 @@ class OnnxWhisperAudioTranscriber:
             except FileNotFoundError:
                 pass
 
+    def ensure_model_ready(self) -> None:
+        self._ensure_model_files_available()
+
     def _get_processor(self) -> Any:
         if self._processor is not None:
             return self._processor
@@ -211,6 +213,10 @@ class OnnxWhisperAudioTranscriber:
                 "WHISPER_MODEL_DOWNLOAD_URL nao configurada para baixar o modelo Whisper ONNX."
             )
 
+        logger.info(
+            "Whisper model files are missing, downloading to %s.",
+            self._model_dir,
+        )
         self._download_model_files()
         self._adopt_downloaded_layout_if_needed()
         remaining_missing_files = self._list_missing_model_files()
@@ -219,6 +225,7 @@ class OnnxWhisperAudioTranscriber:
                 "Download do modelo Whisper concluido, mas arquivos obrigatorios continuam ausentes: "
                 f"{', '.join(remaining_missing_files)}."
             )
+        logger.info("Whisper model download completed successfully.")
 
     def _adopt_downloaded_layout_if_needed(self) -> None:
         source_dir = self._find_model_source_dir()
@@ -258,17 +265,40 @@ class OnnxWhisperAudioTranscriber:
         ]
 
     def _download_model_files(self) -> None:
-        if gdown is None:
-            raise AudioTranscriptionError("Dependencia gdown nao instalada para baixar o modelo Whisper.")
-
+        command = [
+            os.sys.executable,
+            "-m",
+            "gdown",
+            "--folder",
+            self._model_download_url,
+            "-O",
+            str(self._model_dir.parent),
+            "--remaining-ok",
+            "--quiet",
+        ]
         try:
             self._model_dir.parent.mkdir(parents=True, exist_ok=True)
-            gdown.download_folder(
-                url=self._model_download_url,
-                output=str(self._model_dir.parent),
-                quiet=True,
-                remaining_ok=True,
+            subprocess.run(
+                command,
+                check=True,
+                capture_output=True,
+                text=True,
+                shell=False,  # nosec B603: fixed command and arguments
+                timeout=_MODEL_DOWNLOAD_TIMEOUT_SECONDS,
             )
+        except subprocess.TimeoutExpired as exc:
+            raise AudioTranscriptionError(
+                f"Tempo limite excedido ao baixar o modelo Whisper ONNX ({_MODEL_DOWNLOAD_TIMEOUT_SECONDS}s)."
+            ) from exc
+        except subprocess.CalledProcessError as exc:
+            details = (exc.stderr or exc.stdout or "").strip()
+            if "No module named gdown" in details:
+                raise AudioTranscriptionError("Dependencia gdown nao instalada para baixar o modelo Whisper.") from exc
+            if details:
+                raise AudioTranscriptionError(
+                    f"Falha ao baixar o modelo Whisper ONNX do Google Drive: {details.splitlines()[-1][:240]}"
+                ) from exc
+            raise AudioTranscriptionError("Falha ao baixar o modelo Whisper ONNX do Google Drive.") from exc
         except Exception as exc:  # pragma: no cover - external download guard
             raise AudioTranscriptionError("Falha ao baixar o modelo Whisper ONNX do Google Drive.") from exc
 

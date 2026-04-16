@@ -1,4 +1,5 @@
-const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL ?? 'http://0.0.0.0:8000').replace(/\/$/, '')
+import { buildApiUrl } from '@/lib/api-url'
+import { fetchWithTimeout, readJsonBody } from '@/lib/http-json'
 
 export type ChatSessionSummary = {
   id: string
@@ -50,23 +51,39 @@ type ApiErrorPayload = {
   error?: string
 }
 
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
+const TRANSCRIPTION_REQUEST_TIMEOUT_MS = 180_000
+
+async function request<T>(path: string, init?: RequestInit, timeoutMs?: number): Promise<T> {
   const headers = new Headers(init?.headers ?? {})
   if (!(init?.body instanceof FormData) && !headers.has('Content-Type')) {
     headers.set('Content-Type', 'application/json')
   }
 
-  const response = await fetch(`${apiBaseUrl}${path}`, {
-    ...init,
-    headers,
-  })
+  const response = await fetchWithTimeout(
+    buildApiUrl(path),
+    {
+      ...init,
+      headers,
+    },
+    timeoutMs,
+  )
 
   if (!response.ok) {
-    const payload = (await response.json().catch(() => null)) as ApiErrorPayload | null
+    const { value: payload } = await readJsonBody<ApiErrorPayload>(response)
     throw new Error(payload?.error ?? 'Nao foi possivel completar a requisicao.')
   }
 
-  return (await response.json()) as T
+  const { parsed, value, raw } = await readJsonBody<T>(response)
+  if (!parsed || value === null) {
+    const contentType = response.headers.get('content-type') ?? 'desconhecido'
+    const snippet = raw.slice(0, 80).replace(/\s+/g, ' ')
+    throw new Error(
+      `Resposta invalida da API em ${path} (content-type: ${contentType}).` +
+        (snippet ? ` Trecho: ${snippet}` : ' Verifique VITE_API_BASE_URL/proxy.'),
+    )
+  }
+
+  return value
 }
 
 export function listChatSessions() {
@@ -131,8 +148,12 @@ export function postChatAudioMessage(input: {
     formData.append('language', input.language)
   }
 
-  return request<SendChatAudioMessageResponse>('/api/chat/audio-messages', {
-    method: 'POST',
-    body: formData,
-  })
+  return request<SendChatAudioMessageResponse>(
+    '/api/chat/audio-messages',
+    {
+      method: 'POST',
+      body: formData,
+    },
+    TRANSCRIPTION_REQUEST_TIMEOUT_MS,
+  )
 }
