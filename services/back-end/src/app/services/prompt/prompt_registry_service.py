@@ -37,6 +37,14 @@ class PromptRegistryService:
         )
         return self._prompt_registry_repository.create_prompt(registration)
 
+    def ensure_prompt(self, raw_key: str, template: str, description: str) -> PromptRegistryEntry:
+        registration = PromptRegistration(
+            key=self._prompt_engine.normalize_key(raw_key),
+            template=template,
+            description=description,
+        )
+        return self._prompt_registry_repository.ensure_prompt(registration)
+
     def create_version(self, raw_key: str, template: str, description: str) -> PromptRegistryEntry:
         registration = PromptVersionRegistration(
             key=self._prompt_engine.normalize_key(raw_key),

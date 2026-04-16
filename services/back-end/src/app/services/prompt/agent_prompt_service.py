@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from app.domain_models.prompt.exceptions import PromptAlreadyExistsError
 from app.services.prompt.prompt_registry_service import PromptRegistryService
 
 CHAT_AGENT_PROMPT_KEY = "chat-agent-system"
@@ -58,11 +57,8 @@ class AgentPromptService:
         )
 
     def _ensure_prompt(self, key: str, template: str, description: str) -> None:
-        try:
-            self._prompt_registry_service.register_prompt(
-                raw_key=key,
-                template=template,
-                description=description,
-            )
-        except PromptAlreadyExistsError:
-            return
+        self._prompt_registry_service.ensure_prompt(
+            raw_key=key,
+            template=template,
+            description=description,
+        )

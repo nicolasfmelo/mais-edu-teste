@@ -1,7 +1,10 @@
 from __future__ import annotations
 
 from sqlalchemy import select
+from sqlalchemy.dialects.postgresql import insert as postgresql_insert
+from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+from sqlalchemy.orm import Session
 from sqlalchemy.orm import selectinload
 
 from app.domain_models.common.exceptions import StorageUnavailableError
@@ -57,6 +60,12 @@ class SQLAlchemyPromptRegistryRepository:
         except SQLAlchemyError as exc:
             raise StorageUnavailableError("Unable to create prompt registry entry.") from exc
 
+    def ensure_prompt(self, registration: PromptRegistration) -> PromptRegistryEntry:
+        return with_storage_error(
+            lambda: self._ensure_prompt(registration),
+            message="Unable to ensure prompt registry entry.",
+        )
+
     def create_version(self, registration: PromptVersionRegistration) -> PromptRegistryEntry:
         return with_storage_error(
             lambda: self._create_version(registration),
@@ -100,6 +109,52 @@ class SQLAlchemyPromptRegistryRepository:
             session.flush()
             session.refresh(row)
             return self._to_domain(row)
+
+    def _ensure_prompt(self, registration: PromptRegistration) -> PromptRegistryEntry:
+        with self._database.session_scope() as session:
+            inserted = self._insert_entry_if_missing(session, registration.key.value)
+            row = require_entity(session, self._required_prompt_lookup(registration.key))
+
+            if inserted or not row.versions:
+                row.versions.append(
+                    PromptVersionModel(
+                        id=PromptVersionId.new().value,
+                        version_number=1,
+                        template=registration.template,
+                        description=registration.description,
+                        is_active=True,
+                    )
+                )
+
+            session.flush()
+            session.refresh(row)
+            return self._to_domain(row)
+
+    def _insert_entry_if_missing(self, session: Session, key: str) -> bool:
+        dialect_name = session.bind.dialect.name if session.bind is not None else ""
+
+        if dialect_name == "postgresql":
+            result = session.execute(
+                postgresql_insert(PromptRegistryEntryModel)
+                .values(key=key)
+                .on_conflict_do_nothing(index_elements=["key"])
+            )
+            return (result.rowcount or 0) > 0
+
+        if dialect_name == "sqlite":
+            result = session.execute(
+                sqlite_insert(PromptRegistryEntryModel)
+                .values(key=key)
+                .on_conflict_do_nothing(index_elements=["key"])
+            )
+            return (result.rowcount or 0) > 0
+
+        if session.get(PromptRegistryEntryModel, key) is not None:
+            return False
+
+        session.add(PromptRegistryEntryModel(key=key))
+        session.flush()
+        return True
 
     def _activate_version(self, entry: PromptRegistryEntry) -> PromptRegistryEntry:
         with self._database.session_scope() as session:
