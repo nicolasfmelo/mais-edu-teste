@@ -286,7 +286,7 @@ const SECTIONS: DocSection[] = [
           ['Backend', 'Python 3.12 + FastAPI', 'Sem necessidade de performance massiva; ecossistema de LLM mais maduro'],
           ['Agente', 'LangChain + LangGraph', 'Melhor controle de fluxo do mercado para agentes'],
           ['Frontend', 'TypeScript + React + Bun + Shadcn', 'Rapidez de desenvolvimento, tipagem forte, componentes acessiveis'],
-          ['Banco de dados', 'PostgreSQL 16', 'Estabilidade, suporte a JSONB e vetores, amplamente conhecido'],
+          ['Banco de dados', 'PostgreSQL 17', 'Estabilidade, suporte a JSONB e vetores, amplamente conhecido'],
           ['ORM', 'SQLAlchemy', 'Maturidade, suporte a migracao e compatibilidade com testes via SQLite'],
           ['Vector store', 'Qdrant (em memoria no MVP)', 'Bom custo-beneficio para busca semantica'],
           ['Object store', 'MinIO', 'Compativel com S3, facil de rodar localmente e em cloud'],
@@ -353,6 +353,7 @@ const SECTIONS: DocSection[] = [
         rows: [
           ['POST', '/api/chat/messages', 'Envia mensagem para uma sessao e retorna resposta do agente'],
           ['POST', '/api/indexing/universities/import', 'Importa registros de universidades e gera chunks'],
+          ['GET', '/metrics', 'Endpoint Prometheus para scraping de metricas HTTP'],
           ['GET', '/api/metrics/health', 'Healthcheck simples'],
           ['GET', '/api/metrics/summary', 'Resumo agregado de sessoes, mensagens e hits de RAG'],
           ['POST', '/api/evaluation/sessions/{session_id}', 'Avalia uma sessao existente'],
@@ -371,7 +372,7 @@ const SECTIONS: DocSection[] = [
     blocks: [
       {
         type: 'paragraph',
-        text: 'O ambiente de desenvolvimento e levantado via Docker Compose a partir da raiz do repositorio. O compose centraliza os containers compartilhados entre frontend e backend.',
+        text: 'O ambiente de desenvolvimento e levantado via Docker Compose em services/compose.yaml, que centraliza frontend, backend, banco, object store e observabilidade.',
       },
       {
         type: 'heading',
@@ -381,8 +382,11 @@ const SECTIONS: DocSection[] = [
         type: 'table',
         headers: ['Servico', 'Imagem', 'Porta padrao'],
         rows: [
-          ['PostgreSQL', 'postgres:16-alpine', '5432'],
+          ['PostgreSQL', 'postgres:17-alpine', '5432'],
           ['MinIO', 'minio/minio:latest', '9000 (API), 9001 (Console)'],
+          ['Prometheus', 'prom/prometheus', '9090'],
+          ['Loki', 'grafana/loki', '3100'],
+          ['Grafana', 'grafana/grafana', '3000'],
         ],
       },
       {
@@ -397,6 +401,8 @@ const SECTIONS: DocSection[] = [
           ['DATASETS_DIR', 'services/datasets', 'Caminho do diretorio de datasets de cursos'],
           ['INDEXING_BOOTSTRAP_ENABLED', 'true', 'Habilita a carga inicial do catalogo de cursos no startup'],
           ['LLM_PROXY_BASE_URL', 'https://kviwmiapph.execute-api.us-east-1.amazonaws.com', 'URL base do proxy de LLM'],
+          ['LOG_LEVEL', 'INFO', 'Nivel de log estruturado da API'],
+          ['LOG_FORMAT', 'json', 'Formato de log (json em container, console no run_local.py)'],
         ],
       },
       {
@@ -430,11 +436,12 @@ const SECTIONS: DocSection[] = [
       {
         type: 'code',
         language: 'bash',
-        text: `# Subir infra
-docker compose up -d postgres
+        text: `# Subir infra + observabilidade
+cd services
+docker compose up -d postgres minio prometheus loki promtail grafana
 
 # Backend
-cd services/back-end
+cd back-end
 python -m venv .venv
 source .venv/bin/activate
 pip install -e ".[dev]"
@@ -442,7 +449,7 @@ export DATABASE_URL="postgresql://postgres:postgres@localhost:5432/mais_a_educ"
 python run_local.py
 
 # Frontend
-cd services/front-end
+cd ../front-end
 bun install
 bun run dev`,
       },

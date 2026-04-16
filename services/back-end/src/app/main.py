@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.bootstrap.container import AppContainer
+from app.bootstrap.observability import configure_structured_logging, install_observability
 from app.domain_models.common.exceptions import (
     BackendDomainError,
     AudioTranscriptionError,
@@ -27,6 +28,11 @@ def _resolve_cors_origins(container: object) -> list[str]:
 
 def create_application(container: AppContainer | None = None) -> FastAPI:
     app_container = container or AppContainer()
+    settings = getattr(app_container, "_settings", None)
+    configure_structured_logging(
+        level=getattr(settings, "log_level", "INFO"),
+        output_format=getattr(settings, "log_format", "json"),
+    )
     app_container.startup()
     application = FastAPI(title="Mais A Educ Backend", version="0.1.0")
     application.state.container = app_container
@@ -49,6 +55,7 @@ def create_application(container: AppContainer | None = None) -> FastAPI:
     application.add_exception_handler(ConversationExportError, _handle_conversation_export_error)
     application.add_exception_handler(ConversationAnalysisError, _handle_conversation_analysis_error)
     application.include_router(app_container.build_router())
+    install_observability(application)
     return application
 
 

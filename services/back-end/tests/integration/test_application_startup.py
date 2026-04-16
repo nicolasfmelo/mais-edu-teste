@@ -18,7 +18,10 @@ class StubContainer:
 def test_application_runs_container_startup_on_lifespan() -> None:
     container = StubContainer()
 
-    with TestClient(create_application(container=container)):
-        pass
+    with TestClient(create_application(container=container)) as client:
+        response = client.get("/metrics")
 
     assert container.started is True
+    assert response.status_code == 200
+    assert "http_requests_total" in response.text
+    assert "x-request-id" in response.headers

@@ -92,6 +92,8 @@ class AppSettings:
     )
     minio_endpoint: str = "localhost:9000"
     minio_export_bucket: str = "conversations"
+    log_level: str = "INFO"
+    log_format: str = "json"
 
     @classmethod
     def from_env(cls) -> "AppSettings":
@@ -127,6 +129,8 @@ class AppSettings:
                 "MINIO_EXPORT_BUCKET",
                 os.getenv("MINIO_BUCKET_NAME", "conversations"),
             ),
+            log_level=os.getenv("LOG_LEVEL", "INFO").strip() or "INFO",
+            log_format=os.getenv("LOG_FORMAT", "json").strip() or "json",
             whisper_model_path=Path(
                 os.getenv(
                     "WHISPER_MODEL_PATH",

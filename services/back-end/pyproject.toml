@@ -15,8 +15,10 @@ dependencies = [
   "onnxruntime>=1.22,<2.0",
   "pydantic>=2.11,<3.0",
   "python-multipart>=0.0.20,<1.0",
+  "prometheus-client>=0.23,<1.0",
   "psycopg[binary]>=3.2,<4.0",
   "sqlalchemy>=2.0,<3.0",
+  "structlog>=25.4,<26.0",
   "transformers>=4.57,<5.0",
   "uvicorn>=0.34,<1.0",
   "pytest>=8.4.2",
@@ -25,7 +27,9 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
+  "coverage[toml]>=7.10,<8.0",
   "pytest>=8.3,<9.0",
+  "pytest-cov>=7.0,<8.0",
 ]
 
 [tool.setuptools]

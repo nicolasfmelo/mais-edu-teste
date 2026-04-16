@@ -48,6 +48,8 @@ def main() -> None:
     src_dir = backend_root / "src"
 
     _load_env_file(backend_root / ".env")
+    os.environ.setdefault("LOG_LEVEL", "INFO")
+    os.environ.setdefault("LOG_FORMAT", "console")
 
     if str(src_dir) not in sys.path:
         sys.path.insert(0, str(src_dir))

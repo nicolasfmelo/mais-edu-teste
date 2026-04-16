@@ -153,14 +153,14 @@ source .venv/bin/activate
 pip install -e ".[dev]"
 ```
 
-### Subir o Postgres local
+### Subir infraestrutura local (services compose)
 
 ```bash
-cd <repo-root>
-docker compose up -d postgres
+cd services
+docker compose up -d postgres minio
 ```
 
-Neste MVP monorepo, o `compose.yaml` fica na **raiz do repositorio** e centraliza os containers compartilhados entre front e back.
+O ambiente compartilhado entre front e back fica em `services/compose.yaml`.
 
 Defaults do container:
 
@@ -196,6 +196,19 @@ Aplicacao disponivel em:
 - Swagger UI: `http://0.0.0.0:8000/docs`
 - ReDoc: `http://0.0.0.0:8000/redoc`
 
+### Stack de observabilidade
+
+```bash
+cd services
+docker compose up -d prometheus loki promtail grafana
+```
+
+Servicos expostos:
+
+- Grafana: `http://localhost:3000` (`admin` / `admin`)
+- Prometheus: `http://localhost:9090`
+- Loki: `http://localhost:3100`
+
 ## Testes
 
 ```bash
@@ -224,6 +237,7 @@ Suite atual:
 | --- | --- | --- |
 | `POST` | `/api/chat/messages` | Envia uma mensagem para uma sessao e retorna a resposta do agente |
 | `POST` | `/api/indexing/universities/import` | Importa registros de universidades e gera chunks/documentos |
+| `GET` | `/metrics` | Endpoint Prometheus para scraping de metricas HTTP |
 | `GET` | `/api/metrics/health` | Healthcheck simples |
 | `GET` | `/api/metrics/summary` | Resumo agregado de sessoes, mensagens e hits de RAG |
 | `POST` | `/api/evaluation/sessions/{session_id}` | Avalia uma sessao existente |
