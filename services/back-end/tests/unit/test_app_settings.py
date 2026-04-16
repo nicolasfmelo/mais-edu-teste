@@ -11,7 +11,7 @@ def test_from_env_requires_database_url() -> None:
         monkeypatch.setenv("MINIO_ACCESS_KEY", "test-key")
         monkeypatch.setenv("MINIO_SECRET_KEY", "test-secret")
 
-        with pytest.raises(AssertionError, match="DATABASE_URL must be set"):
+        with pytest.raises(ValueError, match="DATABASE_URL must be set"):
             AppSettings.from_env()
 
 
@@ -21,7 +21,7 @@ def test_from_env_requires_postgres_database_url() -> None:
         monkeypatch.setenv("MINIO_ACCESS_KEY", "test-key")
         monkeypatch.setenv("MINIO_SECRET_KEY", "test-secret")
 
-        with pytest.raises(AssertionError, match="PostgreSQL"):
+        with pytest.raises(ValueError, match="PostgreSQL"):
             AppSettings.from_env()
 
 
@@ -43,7 +43,7 @@ def test_from_env_requires_minio_access_key() -> None:
         monkeypatch.delenv("MINIO_ACCESS_KEY", raising=False)
         monkeypatch.setenv("MINIO_SECRET_KEY", "test-secret")
 
-        with pytest.raises(AssertionError, match="MINIO_ACCESS_KEY must be set"):
+        with pytest.raises(ValueError, match="MINIO_ACCESS_KEY must be set"):
             AppSettings.from_env()
 
 
@@ -53,7 +53,7 @@ def test_from_env_requires_minio_secret_key() -> None:
         monkeypatch.setenv("MINIO_ACCESS_KEY", "test-key")
         monkeypatch.delenv("MINIO_SECRET_KEY", raising=False)
 
-        with pytest.raises(AssertionError, match="MINIO_SECRET_KEY must be set"):
+        with pytest.raises(ValueError, match="MINIO_SECRET_KEY must be set"):
             AppSettings.from_env()
 
 

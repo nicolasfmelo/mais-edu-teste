@@ -49,18 +49,20 @@ def _default_whisper_model_download_url() -> str:
 
 def _require_postgres_database_url() -> str:
     database_url = os.getenv("DATABASE_URL")
-    assert database_url, "DATABASE_URL must be set to a PostgreSQL connection string."
-    assert database_url.startswith(("postgresql://", "postgresql+")), (
-        "DATABASE_URL must use a PostgreSQL connection string."
-    )
+    if not database_url:
+        raise ValueError("DATABASE_URL must be set to a PostgreSQL connection string.")
+    if not database_url.startswith(("postgresql://", "postgresql+")):
+        raise ValueError("DATABASE_URL must use a PostgreSQL connection string.")
     return database_url
 
 
 def _require_minio_credentials() -> tuple[str, str]:
     access_key = os.getenv("MINIO_ACCESS_KEY")
     secret_key = os.getenv("MINIO_SECRET_KEY")
-    assert access_key, "MINIO_ACCESS_KEY must be set."
-    assert secret_key, "MINIO_SECRET_KEY must be set."
+    if not access_key:
+        raise ValueError("MINIO_ACCESS_KEY must be set.")
+    if not secret_key:
+        raise ValueError("MINIO_SECRET_KEY must be set.")
     return access_key, secret_key
 
 

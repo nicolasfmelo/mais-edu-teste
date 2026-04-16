@@ -35,19 +35,22 @@ class _DecodeConfig:
     generation_limit: int
 
 
+_ENCODER_MODEL_FILENAME = "encoder_model.onnx"
+_DECODER_MODEL_FILENAME = "decoder_model.onnx"
+
 _REQUIRED_MODEL_FILES = (
     "config.json",
     "preprocessor_config.json",
     "tokenizer.json",
-    "encoder_model.onnx",
-    "decoder_model.onnx",
+    _ENCODER_MODEL_FILENAME,
+    _DECODER_MODEL_FILENAME,
 )
 
 _KNOWN_MODEL_ARTIFACT_FILES = (
     "added_tokens.json",
     "config.json",
-    "decoder_model.onnx",
-    "encoder_model.onnx",
+    _DECODER_MODEL_FILENAME,
+    _ENCODER_MODEL_FILENAME,
     "generation_config.json",
     "mel_filters.bin",
     "merges.txt",
@@ -218,23 +221,34 @@ class OnnxWhisperAudioTranscriber:
             )
 
     def _adopt_downloaded_layout_if_needed(self) -> None:
-        if not self._model_dir.parent.exists():
+        source_dir = self._find_model_source_dir()
+        if source_dir is None:
             return
+        self._move_model_artifacts(source_dir)
 
-        candidates: list[Path] = [self._model_dir.parent]
-        for child in self._model_dir.parent.iterdir():
-            if child.is_dir() and child != self._model_dir:
-                candidates.append(child)
+    def _find_model_source_dir(self) -> Path | None:
+        model_parent_dir = self._model_dir.parent
+        if not model_parent_dir.exists():
+            return None
 
+        candidates: list[Path] = [model_parent_dir]
+        candidates.extend(
+            child
+            for child in model_parent_dir.iterdir()
+            if child.is_dir() and child != self._model_dir
+        )
         for candidate in candidates:
             if all((candidate / filename).exists() for filename in _REQUIRED_MODEL_FILES):
-                self._model_dir.mkdir(parents=True, exist_ok=True)
-                for artifact_name in _KNOWN_MODEL_ARTIFACT_FILES:
-                    source_path = candidate / artifact_name
-                    target_path = self._model_dir / artifact_name
-                    if source_path.exists() and source_path != target_path:
-                        shutil.move(str(source_path), str(target_path))
-                return
+                return candidate
+        return None
+
+    def _move_model_artifacts(self, source_dir: Path) -> None:
+        self._model_dir.mkdir(parents=True, exist_ok=True)
+        for artifact_name in _KNOWN_MODEL_ARTIFACT_FILES:
+            source_path = source_dir / artifact_name
+            target_path = self._model_dir / artifact_name
+            if source_path.exists() and source_path != target_path:
+                shutil.move(str(source_path), str(target_path))
 
     def _list_missing_model_files(self) -> list[str]:
         return [
@@ -263,7 +277,7 @@ class OnnxWhisperAudioTranscriber:
             raise AudioTranscriptionError("Dependencia onnxruntime nao instalada.")
 
         return ort.InferenceSession(
-            str(self._model_dir / "encoder_model.onnx"),
+            str(self._model_dir / _ENCODER_MODEL_FILENAME),
             providers=["CPUExecutionProvider"],
         )
 
@@ -272,7 +286,7 @@ class OnnxWhisperAudioTranscriber:
             raise AudioTranscriptionError("Dependencia onnxruntime nao instalada.")
 
         return ort.InferenceSession(
-            str(self._model_dir / "decoder_model.onnx"),
+            str(self._model_dir / _DECODER_MODEL_FILENAME),
             providers=["CPUExecutionProvider"],
         )
 

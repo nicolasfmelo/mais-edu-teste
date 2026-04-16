@@ -3,24 +3,20 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Protocol
 
-from app.domain_models.chat.export_models import ConversationExportResult
-from app.domain_models.common.contracts import MetricsJobRepository
+from app.domain_models.chat.export_models import ConversationExportPayload, ConversationExportResult
+from app.domain_models.common.contracts import MetricsJobRepository, SessionRepository
 from app.domain_models.metrics.job_models import MetricsJobStatus, MetricsJobType
-from app.engines.chat.conversation_export_engine import serialize_sessions_to_json
-
-
-class SessionRepositoryProtocol(Protocol):
-    def list_all(self) -> tuple: ...
+from app.engines.chat.conversation_export_engine import build_export_payload
 
 
 class ConversationExportStoreProtocol(Protocol):
-    def upload_json(self, object_key: str, data: bytes) -> str: ...
+    def upload_payload(self, object_key: str, payload: ConversationExportPayload) -> str: ...
 
 
 class ConversationExportService:
     def __init__(
         self,
-        session_repository: SessionRepositoryProtocol,
+        session_repository: SessionRepository,
         export_store: ConversationExportStoreProtocol,
         metrics_job_repository: MetricsJobRepository,
     ) -> None:
@@ -33,9 +29,9 @@ class ConversationExportService:
         try:
             sessions = self._session_repository.list_all()
             exported_at = datetime.now(timezone.utc)
-            data = serialize_sessions_to_json(sessions)
+            payload = build_export_payload(sessions, exported_at=exported_at)
             object_key = f"conversations/export_{exported_at.strftime('%Y%m%dT%H%M%S')}.json"
-            self._export_store.upload_json(object_key, data)
+            self._export_store.upload_payload(object_key, payload)
             self._metrics_job_repository.update_job(
                 job.id,
                 MetricsJobStatus.DONE,

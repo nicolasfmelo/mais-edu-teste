@@ -19,7 +19,8 @@ _INJECTION_PATTERNS: list[re.Pattern[str]] = [
     re.compile(r"your\s+new\s+(persona|role|identity)", re.IGNORECASE),
     re.compile(r"roleplay\s+as", re.IGNORECASE),
     # Prompt/system extraction
-    re.compile(r"(what\s+are|repeat|show|reveal|print|output|tell\s+me)\s+(your|the)\s+(instructions?|prompt|system\s+prompt|rules?|context)", re.IGNORECASE),
+    re.compile(r"(what\s+are|repeat|show|reveal)\s+(your|the)\s+(instructions?|prompt|rules?)", re.IGNORECASE),
+    re.compile(r"(print|output|tell\s+me)\s+(your|the)\s+(prompt|system\s+prompt|context)", re.IGNORECASE),
     re.compile(r"(ignore|bypass)\s+(safety|filters?|guidelines?|restrictions?|policies)", re.IGNORECASE),
     # Markup injection
     re.compile(r"\[SYSTEM\]", re.IGNORECASE),

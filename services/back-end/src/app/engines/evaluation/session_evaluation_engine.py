@@ -17,12 +17,18 @@ class SessionEvaluationEngine:
             satisfaction = SatisfactionClass.BAD
 
         evidences = tuple(EvaluationEvidence(snippet=message.content[:140]) for message in user_messages[:2])
+        if satisfaction == SatisfactionClass.GOOD:
+            resolution_score = 2
+        elif assistant_messages:
+            resolution_score = 1
+        else:
+            resolution_score = 0
 
         return SessionEvaluation(
             session_id=session.id,
             satisfaction=satisfaction,
             effort_score=1 if len(user_messages) <= 2 else 3,
             understanding_score=2 if assistant_messages else 0,
-            resolution_score=2 if satisfaction == SatisfactionClass.GOOD else 1 if assistant_messages else 0,
+            resolution_score=resolution_score,
             evidences=evidences,
         )

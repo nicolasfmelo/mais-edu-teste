@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import io
+import json
 
 from minio import Minio
 from minio.error import S3Error
 
+from app.domain_models.chat.export_models import ConversationExportPayload
 from app.domain_models.common.exceptions import ConversationExportError
 
 
@@ -27,8 +29,9 @@ class MinioConversationExportStore:
         except S3Error as exc:
             raise ConversationExportError(f"Cannot access MinIO bucket '{self._bucket}': {exc}") from exc
 
-    def upload_json(self, object_key: str, data: bytes) -> str:
-        """Upload raw bytes as an application/json object. Returns the object key."""
+    def upload_payload(self, object_key: str, payload: ConversationExportPayload) -> str:
+        """Upload an export payload as a JSON object. Returns the object key."""
+        data = _serialize_export_payload(payload)
         try:
             self.ensure_bucket()
             self._client.put_object(
@@ -41,3 +44,30 @@ class MinioConversationExportStore:
             return object_key
         except S3Error as exc:
             raise ConversationExportError(f"Failed to upload export to MinIO: {exc}") from exc
+
+
+def _serialize_export_payload(payload: ConversationExportPayload) -> bytes:
+    serialized_payload = {
+        "exported_at": payload.exported_at.isoformat(),
+        "session_count": payload.session_count,
+        "sessions": [
+            {
+                "id": str(session.id.value),
+                "status": session.status,
+                "created_at": session.created_at.isoformat() if session.created_at else None,
+                "updated_at": session.updated_at.isoformat() if session.updated_at else None,
+                "last_message_at": session.last_message_at.isoformat() if session.last_message_at else None,
+                "messages": [
+                    {
+                        "id": str(message.id.value),
+                        "role": message.role.value,
+                        "content": message.content,
+                        "created_at": message.created_at.isoformat() if message.created_at else None,
+                    }
+                    for message in session.messages
+                ],
+            }
+            for session in payload.sessions
+        ],
+    }
+    return json.dumps(serialized_payload, ensure_ascii=False, indent=2).encode("utf-8")

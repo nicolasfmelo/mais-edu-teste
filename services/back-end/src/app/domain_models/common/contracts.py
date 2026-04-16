@@ -16,7 +16,6 @@ from app.domain_models.common.ids import DocumentId, SessionId
 from app.domain_models.indexing.models import CatalogCourse, CatalogCourseDocument, DocumentChunk, UniversityRecord
 from app.domain_models.metrics.models import ConversationMetrics
 from app.domain_models.prompt.models import (
-    PromptActivation,
     PromptKey,
     PromptRegistration,
     PromptRegistryEntry,

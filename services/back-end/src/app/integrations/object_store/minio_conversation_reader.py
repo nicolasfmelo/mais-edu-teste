@@ -17,7 +17,7 @@ class MinioConversationReader:
     """Reads exported conversation JSON files from a MinIO bucket.
 
     Each object under the 'conversations/' prefix is expected to be a JSON export
-    produced by serialize_sessions_to_json(), containing a top-level 'sessions' list.
+    produced from the conversation export payload, containing a top-level 'sessions' list.
     """
 
     def __init__(
